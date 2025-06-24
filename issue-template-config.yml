@@ -1,0 +1,21 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project Documentation
+    url: https://github.com/yourusername/poker-game/wiki
+    about: Check the project documentation before filing an issue
+issue_templates:
+  - name: "Task Implementation"
+    description: "Template for implementing a project task"
+    title: "[TASK]: "
+    labels: ["task"]
+    body: "./.github/ISSUE_TEMPLATE/task-template.md"
+  - name: "Bug Report"
+    description: "Report a bug in the system"
+    title: "[BUG]: "
+    labels: ["bug"]
+    body: "./.github/ISSUE_TEMPLATE/bug-report-template.md"
+  - name: "Feature Request"
+    description: "Propose a new feature or improvement"
+    title: "[FEATURE]: "
+    labels: ["enhancement"]
+    body: "./.github/ISSUE_TEMPLATE/feature-request-template.md"
