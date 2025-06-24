@@ -1,4 +1,4 @@
-# SSH-Accessible Terminal-Based Multiplayer Poker Game
+# Terminal-Based Multiplayer Poker Game
 
 A production-ready SSH-accessible terminal-based multiplayer Texas Hold'em poker game implemented in Rust.
 
