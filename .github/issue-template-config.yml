@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Project Documentation
-    url: https://github.com/yourusername/poker-game/wiki
+    url: https://github.com/jshand18/ssh-poker-game
     about: Check the project documentation before filing an issue
 issue_templates:
   - name: "Task Implementation"
