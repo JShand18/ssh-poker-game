@@ -86,15 +86,6 @@ This project follows a structured development plan with the following epics:
    ```
    ssh -p 2222 username@localhost
    ```
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for details on how to contribute to this project. All contributions are welcome!
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
-
 ## Acknowledgments
 
 - [russh](https://github.com/Eugeny/russh) - Rust SSH client & server library
@@ -104,4 +95,4 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ## Project Status
 
-This project is currently in development. See the [Project Board](https://github.com/yourusername/poker-game/projects/1) for current progress.
+This project is currently in development. See the [Project Board](https://github.com/users/JShand18/projects/2) for current progress.
