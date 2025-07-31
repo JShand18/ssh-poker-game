@@ -1,0 +1,37 @@
+[package]
+name = "poker-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Core game logic for Texas Hold'em poker."
+keywords.workspace = true
+categories.workspace = true
+
+[lib]
+name = "poker_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "poker-cli"
+path = "src/bin/cli.rs"
+
+[dependencies]
+poker = "0.4.1"
+rand = { version = "0.8.5", features = ["serde"] }
+rand_chacha = "0.3.1"
+serde = { version = "1.0", features = ["derive"] }
+strum = { version = "0.26.2", features = ["derive"] }
+strum_macros = "0.26.2"
+thiserror = "1.0.61"
+log = "0.4.21"
+proptest = { version = "1.0", optional = true }
+
+[dev-dependencies]
+criterion = "0.5"
+itertools = "0.13.0"
+
+[[bench]]
+name = "hand_evaluator_benchmark"
+harness = false 

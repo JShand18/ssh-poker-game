@@ -1,0 +1,23 @@
+[package]
+name = "database"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Database layer for the SSH poker game."
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "derive"] }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+log = "0.4"
+
+[dev-dependencies]
+tempfile = "3.0" 

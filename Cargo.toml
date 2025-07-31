@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/poker-engine",
+    "crates/terminal-ui",
+    "crates/ssh-server",
+    "crates/ai-bot",
+    "crates/database",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["AI Assistant <assistant@example.com>"]
+license = "MIT"
+repository = "https://github.com/user/ssh-poker-game"
+description = "An SSH-accessible terminal-based multiplayer Texas Hold'em poker game."
+keywords = ["poker", "game", "terminal", "ssh", "rust"]
+categories = ["games"] 

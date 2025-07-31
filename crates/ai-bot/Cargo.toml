@@ -1,0 +1,12 @@
+[package]
+name = "ai-bot"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "AI bot for the poker game."
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies] 

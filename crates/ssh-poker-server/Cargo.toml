@@ -1,0 +1,21 @@
+[package]
+name = "ssh-poker-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Main server executable for the SSH poker game."
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+poker-engine = { path = "../poker-engine" }
+ssh-server = { path = "../ssh-server" }
+terminal-ui = { path = "../terminal-ui" }
+database = { path = "../database" }
+ai-bot = { path = "../ai-bot" }
+clap = { version = "4.5", features = ["derive"] }
+colored = "2.1"
+tokio = { version = "1.35", features = ["full"] }
+env_logger = "0.11" 

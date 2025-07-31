@@ -1,0 +1,30 @@
+[package]
+name = "ssh-server"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "SSH server implementation for the poker game."
+keywords.workspace = true
+categories.workspace = true
+
+[[bin]]
+name = "ssh-server"
+path = "src/main.rs"
+
+[dependencies]
+russh = "*"
+russh-keys = "*"
+tokio = { version = "1", features = ["full"] }
+log = "0.4"
+poker-engine = { path = "../poker-engine" }
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+env_logger = "0.10"
+terminal-ui = { path = "../terminal-ui" }
+futures = "0.3"
+base64ct = "=1.7.3"
+async-trait = "0.1"
+database = { path = "../database" } 

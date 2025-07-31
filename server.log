@@ -1,0 +1,80 @@
+warning: unused imports: `Alignment`, `Block`, `Borders`, `Color`, `Constraint`, `Direction`, `Frame`, `Layout`, `Line`, `ListItem`, `List`, `Modifier`, `Paragraph`, `Rect`, `Span`, `Style`, `Text`, and `Wrap`
+  --> crates/terminal-ui/src/lib.rs:9:14
+   |
+9  |     layout::{Alignment, Constraint, Direction, Layout, Rect},
+   |              ^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^  ^^^^^^  ^^^^
+10 |     style::{Color, Modifier, Style},
+   |             ^^^^^  ^^^^^^^^  ^^^^^
+11 |     text::{Line, Span, Text},
+   |            ^^^^  ^^^^  ^^^^
+12 |     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+   |               ^^^^^  ^^^^^^^  ^^^^  ^^^^^^^^  ^^^^^^^^^  ^^^^
+13 |     Frame, Terminal,
+   |     ^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `Action`
+ --> crates/terminal-ui/src/app.rs:1:39
+  |
+1 | use poker_engine::{GameState, Player, Action};
+  |                                       ^^^^^^
+
+warning: use of deprecated method `ratatui::Frame::<'_>::size`: use .area() as it's the more correct name
+  --> crates/terminal-ui/src/ui.rs:24:18
+   |
+24 |         .split(f.size());
+   |                  ^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: unused import: `backend::Backend`
+ --> crates/terminal-ui/src/ui.rs:3:5
+  |
+3 |     backend::Backend,
+  |     ^^^^^^^^^^^^^^^^
+
+warning: unused variable: `app`
+   --> crates/terminal-ui/src/ui.rs:251:46
+    |
+251 | fn draw_game_over(f: &mut Frame, area: Rect, app: &App) {
+    |                                              ^^^ help: if this is intentional, prefix it with an underscore: `_app`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `terminal-ui` (lib) generated 5 warnings (run `cargo fix --lib -p terminal-ui` to apply 2 suggestions)
+   Compiling ssh-server v0.1.0 (/Users/jordan/dev/projects/ssh-poker-game/crates/ssh-server)
+   Compiling ssh-poker-server v0.1.0 (/Users/jordan/dev/projects/ssh-poker-game/crates/ssh-poker-server)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.81s
+     Running `target/debug/ssh-poker-server`
+🚀 Starting Poker Server on 127.0.0.1:2222
+Connect with one of:
+  - telnet 127.0.0.1 2222
+  - nc 127.0.0.1 2222
+  - ssh -p 2222 <username>@127.0.0.1 (coming soon)
+
+[2025-07-29T04:46:26Z INFO  ssh_server] Starting TCP server on 127.0.0.1:2222
+[2025-07-29T04:46:26Z INFO  ssh_server] Server listening on 127.0.0.1:2222
+[2025-07-29T04:46:32Z INFO  ssh_server] New connection from: 127.0.0.1:60998
+[2025-07-29T04:46:32Z INFO  ssh_server] Received command from 127.0.0.1:60998: play
+[2025-07-29T04:46:32Z INFO  ssh_server] Received command from 127.0.0.1:60998: check
+[2025-07-29T04:46:32Z INFO  ssh_server] Received command from 127.0.0.1:60998: call
+[2025-07-29T04:46:32Z INFO  ssh_server] Received command from 127.0.0.1:60998: quit
+[2025-07-29T04:46:40Z INFO  ssh_server] New connection from: 127.0.0.1:61006
+[2025-07-29T04:46:51Z INFO  ssh_server] Received command from 127.0.0.1:61006: play
+[2025-07-29T04:46:58Z INFO  ssh_server] Received command from 127.0.0.1:61006: bet
+[2025-07-29T04:47:08Z INFO  ssh_server] Received command from 127.0.0.1:61006: bet(40)
+[2025-07-29T04:47:17Z INFO  ssh_server] Received command from 127.0.0.1:61006: Bet(20)
+[2025-07-29T04:47:24Z INFO  ssh_server] Received command from 127.0.0.1:61006: check
+[2025-07-29T04:47:37Z INFO  ssh_server] Received command from 127.0.0.1:61006: check
+[2025-07-29T04:47:46Z INFO  ssh_server] Received command from 127.0.0.1:61006: check
+[2025-07-29T04:47:57Z INFO  ssh_server] Received command from 127.0.0.1:61006: check
+[2025-07-29T04:48:15Z INFO  ssh_server] Received command from 127.0.0.1:61006: play
+[2025-07-29T04:49:11Z INFO  ssh_server] Received command from 127.0.0.1:61006: bet
+[2025-07-29T04:49:14Z INFO  ssh_server] Received command from 127.0.0.1:61006: help
+[2025-07-29T04:49:21Z INFO  ssh_server] Received command from 127.0.0.1:61006: bet 20
+[2025-07-29T04:49:37Z INFO  ssh_server] Received command from 127.0.0.1:61006: raise 40
+[2025-07-29T04:49:52Z INFO  ssh_server] Received command from 127.0.0.1:61006: bet 20
+[2025-07-29T04:50:03Z INFO  ssh_server] Received command from 127.0.0.1:61006: check
+[2025-07-29T04:50:22Z INFO  ssh_server] Received command from 127.0.0.1:61006: check
+[2025-07-29T04:50:36Z INFO  ssh_server] Received command from 127.0.0.1:61006: quit

@@ -1,0 +1,5 @@
+[alias]
+dev = "run --package ssh-poker-server"
+test-all = "test --workspace --all-features"
+check-all = "check --workspace --all-features"
+clippy-all = "clippy --workspace --all-features --all-targets" 

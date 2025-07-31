@@ -1,0 +1,20 @@
+[package]
+name = "terminal-ui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Terminal UI for the poker game using ratatui."
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+poker-engine = { path = "../poker-engine" }
+ratatui = "0.26"
+crossterm = { version = "0.27", features = ["event-stream"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+log = "0.4" 
