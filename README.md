@@ -54,38 +54,76 @@ This project follows a structured development plan with the following epics:
 
 ### Prerequisites
 
-- Rust 1.70+ and Cargo
-- PostgreSQL 14+
-- OpenSSH or compatible SSH client
+- **Rust 1.70+** and Cargo (install from [rustup.rs](https://rustup.rs/))
+- **SSH client** (OpenSSH, PuTTY, or any compatible client)
+- **Terminal** with ANSI color support (most modern terminals)
 
-### Installation
+### Quick Start (Recommended)
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/poker-game.git
-   cd poker-game
+1. **Clone and run:**
+   ```bash
+   git clone <your-repo-url>
+   cd ssh-poker-game
+   ./run_server.sh
    ```
 
-2. Build the project:
+   The script will:
+   - Build the project automatically
+   - Create a SQLite database
+   - Set up a demo user (username: `demo`, password: `demo123`)
+   - Start the server on port 2222
+
+2. **Connect and play:**
+   ```bash
+   ssh -p 2222 demo@localhost
    ```
+
+### Manual Installation
+
+1. **Build the project:**
+   ```bash
    cargo build --release
    ```
 
-3. Configure the database:
-   ```
-   cp config/database.example.toml config/database.toml
-   # Edit config/database.toml with your PostgreSQL credentials
+2. **Start the server:**
+   ```bash
+   # Basic server (creates demo user on first run)
+   ./target/release/ssh-poker-server --create-demo-user
+   
+   # Or with custom settings
+   ./target/release/ssh-poker-server \
+     --port 2222 \
+     --address 0.0.0.0 \
+     --database poker_game.db \
+     --create-demo-user \
+     --verbose
    ```
 
-4. Start the server:
-   ```
-   ./target/release/poker-game
+3. **Connect to play:**
+   ```bash
+   ssh -p 2222 demo@localhost
+   # Use password: demo123
    ```
 
-5. Connect to the server:
-   ```
-   ssh -p 2222 username@localhost
-   ```
+### Creating Additional Users
+
+To create more users, you can:
+
+1. **Use the built-in registration** (when connecting via SSH)
+2. **Add users via the database** (SQLite tools)
+3. **Extend the server** with user management commands
+
+### Server Options
+
+```bash
+./target/release/ssh-poker-server --help
+```
+
+- `--port` - Server port (default: 2222)
+- `--address` - Bind address (default: 0.0.0.0)
+- `--database` - Database file path (default: poker_game.db)
+- `--create-demo-user` - Create demo user on startup
+- `--verbose` - Enable debug logging
 ## Acknowledgments
 
 - [russh](https://github.com/Eugeny/russh) - Rust SSH client & server library

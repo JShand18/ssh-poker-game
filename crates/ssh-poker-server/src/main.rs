@@ -1,57 +1,123 @@
-use ssh_server::{ServerConfig, run_server};
+use ssh_server::run_server;
+use database::Database;
 use clap::{Parser, ValueEnum};
+use colored::*;
+use log::{info, error};
+use std::path::Path;
 
 #[derive(Parser)]
 #[command(name = "ssh-poker-server")]
 #[command(about = "SSH-accessible multiplayer poker game server")]
+#[command(version)]
 struct Cli {
-    /// Server mode
-    #[arg(value_enum, default_value = "simple")]
-    mode: ServerMode,
-    
     /// Port to listen on
     #[arg(short, long, default_value = "2222")]
     port: u16,
     
     /// Address to bind to
-    #[arg(short, long, default_value = "127.0.0.1")]
+    #[arg(short, long, default_value = "0.0.0.0")]
     address: String,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum ServerMode {
-    /// Simple text-based interface
-    Simple,
-    /// Rich terminal UI with graphics
-    Tui,
+    
+    /// Database file path (SQLite)
+    #[arg(short, long, default_value = "poker_game.db")]
+    database: String,
+    
+    /// Create a demo user for testing
+    #[arg(long)]
+    create_demo_user: bool,
+    
+    /// Enable debug logging
+    #[arg(short, long)]
+    verbose: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    env_logger::init();
-    
     let cli = Cli::parse();
     
-    let config = ServerConfig::new()
-        .with_address(cli.address.clone())
-        .with_port(cli.port);
+    // Initialize logging
+    let log_level = if cli.verbose { "debug" } else { "info" };
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
     
-    match cli.mode {
-        ServerMode::Simple => {
-            println!("🚀 Starting Poker Server (Simple Mode) on {}:{}", config.address, config.port);
-            println!("Connect with one of:");
-            println!("  - telnet {} {}", config.address, config.port);
-            println!("  - nc {} {}", config.address, config.port);
-            println!("  - ssh -p {} <username>@{} (coming soon)\n", config.port, config.address);
-            
-            run_server(config).await?;
+    // Print welcome banner
+    print_banner();
+    
+    // Initialize database
+    println!("{}", "🗄️  Initializing database...".cyan());
+    let database = if Path::new(&cli.database).exists() {
+        Database::new(&cli.database).await?
+    } else {
+        println!("   Creating new database: {}", cli.database);
+        let db = Database::new(&cli.database).await?;
+        db.migrate().await?;
+        db
+    };
+    
+    // Create demo user if requested
+    if cli.create_demo_user {
+        println!("{}", "👤 Creating demo user...".cyan());
+        create_demo_user(&database).await?;
+    }
+    
+    // Start server
+    println!("{}", format!("🚀 Starting SSH Poker Server on {}:{}", cli.address, cli.port).green().bold());
+    println!("{}", "📋 Server Information:".yellow());
+    println!("   • Database: {}", cli.database);
+    println!("   • SSH Port: {}", cli.port);
+    println!("   • Bind Address: {}", cli.address);
+    println!();
+    println!("{}", "🎮 How to connect:".yellow().bold());
+    println!("   ssh -p {} <username>@{}", cli.port, if cli.address == "0.0.0.0" { "localhost" } else { &cli.address });
+    println!();
+    println!("{}", "📚 Available commands:".yellow());
+    println!("   • (F)old, (C)all/Check, (R)aise, (A)ll-in");
+    println!("   • (Q)uit to disconnect");
+    println!();
+    
+    if cli.create_demo_user {
+        println!("{}", "🎯 Demo User Created:".green().bold());
+        println!("   Username: demo");
+        println!("   Password: demo123");
+        println!("   Try: ssh -p {} demo@{}", cli.port, if cli.address == "0.0.0.0" { "localhost" } else { &cli.address });
+        println!();
+    }
+    
+    info!("Starting SSH server on {}:{}", cli.address, cli.port);
+    
+    // Run the server
+    if let Err(e) = run_server(database, &cli.address, cli.port).await {
+        error!("Server error: {}", e);
+        eprintln!("{} {}", "❌ Server failed:".red().bold(), e);
+        std::process::exit(1);
+    }
+    
+    Ok(())
+}
+
+fn print_banner() {
+    println!("{}", r#"
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║    ♠♥♦♣  SSH POKER GAME SERVER  ♣♦♥♠                                          ║
+║                                                                              ║
+║    A terminal-based multiplayer Texas Hold'em poker game                    ║
+║    accessible via any SSH client with AI opponents                          ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+"#.green());
+}
+
+async fn create_demo_user(database: &Database) -> Result<(), Box<dyn std::error::Error>> {
+    use ssh_server::SecureAuthService;
+    
+    let mut auth_service = SecureAuthService::new(database.clone());
+    
+    match auth_service.create_user("demo", "demo123", "demo@example.com").await {
+        Ok(user_id) => {
+            println!("   ✅ Demo user created with ID: {}", user_id);
         }
-        ServerMode::Tui => {
-            println!("🚀 Starting Poker Server (TUI Mode) on {}:{}", config.address, config.port);
-            println!("Connect with: nc {} {}", config.address, config.port);
-            println!("Note: Use a terminal that supports ANSI escape sequences\n");
-            
-            ssh_server::tui_server::run_tui_server(config).await?;
+        Err(e) => {
+            println!("   ⚠️  Demo user may already exist: {}", e);
         }
     }
     

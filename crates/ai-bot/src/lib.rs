@@ -191,7 +191,7 @@ impl AIBot {
             _ => 0.0,
         };
 
-        let mut strength = 0.3; // Base strength
+        let mut strength: f64 = 0.3; // Base strength
 
         if is_pair {
             strength += match card1.rank {
@@ -245,9 +245,9 @@ impl AIBot {
     }
 
     fn hand_rank_to_strength(&self, hand: &Hand) -> f64 {
-        match hand.rank {
+        match hand.rank() {
             poker_engine::HandRank::HighCard => 0.1,
-            poker_engine::HandRank::Pair => 0.2,
+            poker_engine::HandRank::OnePair => 0.2,
             poker_engine::HandRank::TwoPair => 0.4,
             poker_engine::HandRank::ThreeOfAKind => 0.6,
             poker_engine::HandRank::Straight => 0.7,

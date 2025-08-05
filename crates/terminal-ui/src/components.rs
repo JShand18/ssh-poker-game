@@ -15,6 +15,11 @@ pub fn get_card_style(card: &poker_engine::Card) -> Style {
 
 /// Format a card with unicode symbols
 pub fn format_card_unicode(card: &poker_engine::Card) -> String {
+    format_card(card)
+}
+
+/// Format a card for display
+pub fn format_card(card: &poker_engine::Card) -> String {
     let suit = match card.suit {
         poker_engine::Suit::Clubs => "♣",
         poker_engine::Suit::Diamonds => "♦",
@@ -39,4 +44,12 @@ pub fn format_card_unicode(card: &poker_engine::Card) -> String {
     };
     
     format!("{}{}", rank, suit)
+}
+
+/// Get card color based on suit
+pub fn get_card_color(card: &poker_engine::Card) -> Color {
+    match card.suit {
+        poker_engine::Suit::Hearts | poker_engine::Suit::Diamonds => Color::Red,
+        _ => Color::White,
+    }
 } 

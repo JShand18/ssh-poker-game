@@ -1,10 +1,11 @@
 use anyhow::{Result, anyhow};
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::{rand_core::OsRng, SaltString}};
 use database::{Database, models::User};
-use russh_keys::key;
+use russh_keys::{key, PublicKeyBase64};
 use std::collections::HashMap;
 use log::{error, warn, info, debug};
 use std::time::{Duration, Instant};
+use uuid::Uuid;
 
 const MAX_AUTH_ATTEMPTS: u32 = 3;
 const LOCKOUT_DURATION: Duration = Duration::from_secs(300); // 5 minutes
@@ -84,37 +85,11 @@ impl SecureAuthService {
             return Ok(false);
         }
 
-        // Try cache first
-        if let Some(user) = self.user_cache.get(username) {
-            let is_valid = self.verify_public_key(public_key, &user.public_key)?;
-            self.handle_auth_result(username, is_valid);
-            return Ok(is_valid);
-        }
-
-        // Fetch from database
-        match self.database.get_user_by_username(username).await {
-            Ok(Some(user)) => {
-                let is_valid = self.verify_public_key(public_key, &user.public_key)?;
-                if is_valid {
-                    info!("Successful public key authentication for user: {}", username);
-                    self.user_cache.insert(username.to_string(), user);
-                    self.reset_auth_attempts(username);
-                } else {
-                    warn!("Failed public key authentication for user: {}", username);
-                    self.record_failed_attempt(username);
-                }
-                Ok(is_valid)
-            }
-            Ok(None) => {
-                warn!("Public key authentication attempt for non-existent user: {}", username);
-                self.record_failed_attempt(username);
-                Ok(false)
-            }
-            Err(e) => {
-                error!("Database error during public key authentication for user {}: {}", username, e);
-                Ok(false)
-            }
-        }
+        // TODO: Implement public key storage in database for full functionality
+        // For MVP, we'll disable public key authentication
+        warn!("Public key authentication attempted for user {} but not yet implemented", username);
+        self.record_failed_attempt(username);
+        Ok(false)
     }
 
     fn verify_password(&self, provided_password: &str, stored_hash: &str) -> Result<bool> {
@@ -131,7 +106,7 @@ impl SecureAuthService {
 
     fn verify_public_key(&self, provided_key: &key::PublicKey, stored_key: &Option<String>) -> Result<bool> {
         if let Some(stored_key_str) = stored_key {
-            match key::parse_public_key(stored_key_str.as_bytes()) {
+            match key::parse_public_key(stored_key_str.as_bytes(), None) {
                 Ok(stored_key_parsed) => {
                     // Compare key types and data
                     let provided_bytes = provided_key.public_key_bytes();
@@ -149,25 +124,25 @@ impl SecureAuthService {
         }
     }
 
-    pub async fn create_user(&mut self, username: &str, password: &str, email: &str) -> Result<uuid::Uuid> {
+    pub async fn create_user(&mut self, username: &str, password: &str, email: &str) -> Result<Uuid> {
         info!("Creating new user: {}", username);
         let password_hash = self.hash_password(password)?;
         
         let user = database::models::NewUser {
             username: username.to_string(),
-            email: email.to_string(),
+            email: Some(email.to_string()),
             password_hash,
-            public_key: None,
         };
 
         match self.database.create_user(user).await {
-            Ok(user_id) => {
-                info!("Successfully created user: {} with ID: {}", username, user_id);
-                Ok(user_id)
+            Ok(user) => {
+                info!("Successfully created user: {} with ID: {}", username, user.id);
+                // Parse the string ID to Uuid
+                Uuid::parse_str(&user.id).map_err(|e| anyhow!("Failed to parse UUID: {}", e))
             }
             Err(e) => {
                 error!("Failed to create user {}: {}", username, e);
-                Err(e)
+                Err(e.into())
             }
         }
     }
@@ -239,7 +214,7 @@ impl SecureAuthService {
             Ok(None) => Ok(None),
             Err(e) => {
                 error!("Database error fetching user {}: {}", username, e);
-                Err(e)
+                Err(e.into())
             }
         }
     }
@@ -285,7 +260,7 @@ impl SecureAuthService {
             }
             Err(e) => {
                 error!("Failed to update password for user {}: {}", username, e);
-                Err(e)
+                Err(e.into())
             }
         }
     }

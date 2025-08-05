@@ -33,6 +33,7 @@ impl Default for DatabaseConfig {
 }
 
 /// Database connection pool and operations
+#[derive(Clone)]
 pub struct Database {
     pool: SqlitePool,
 }
@@ -87,6 +88,44 @@ impl Database {
     /// Close the database connection
     pub async fn close(self) {
         self.pool.close().await;
+    }
+
+    /// Create a new user
+    pub async fn create_user(&self, new_user: NewUser) -> DatabaseResult<User> {
+        operations::UserOperations::create(&self.pool, new_user).await
+    }
+
+    /// Get user by username
+    pub async fn get_user_by_username(&self, username: &str) -> DatabaseResult<Option<User>> {
+        operations::UserOperations::find_by_username(&self.pool, username).await
+    }
+
+    /// Update user password
+    pub async fn update_user_password(&self, username: &str, password_hash: &str) -> DatabaseResult<()> {
+        // First get the user
+        let user = self.get_user_by_username(username).await?;
+        if let Some(user) = user {
+            sqlx::query("UPDATE users SET password_hash = ?, updated_at = ? WHERE username = ?")
+                .bind(password_hash)
+                .bind(chrono::Utc::now().to_rfc3339())
+                .bind(username)
+                .execute(&self.pool)
+                .await?;
+            Ok(())
+        } else {
+            Err(DatabaseError::UserNotFound(username.to_string()))
+        }
+    }
+
+    /// Create a test/in-memory database for testing
+    #[cfg(test)]
+    pub async fn new_in_memory() -> DatabaseResult<Self> {
+        let config = DatabaseConfig {
+            database_path: ":memory:".to_string(),
+            create_if_missing: true,
+            max_connections: 5,
+        };
+        Self::new(config).await.map_err(|e| DatabaseError::OperationFailed(e.to_string()))
     }
 }
 

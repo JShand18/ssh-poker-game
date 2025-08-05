@@ -161,7 +161,8 @@ impl SessionManager {
     }
 
     pub async fn create_session(&self, user: User) -> Uuid {
-        let session = PlayerSession::new(user.id, user.username.clone());
+        let user_id = Uuid::parse_str(&user.id).unwrap_or_else(|_| Uuid::new_v4());
+        let session = PlayerSession::new(user_id, user.username.clone());
         let session_id = session.id;
         
         {
@@ -326,9 +327,8 @@ impl SessionManager {
         }
     }
 
-    pub async fn start_cleanup_task(&self) {
-        let session_manager = Arc::new(self);
-        let cleanup_interval = self.cleanup_interval;
+    pub fn start_cleanup_task(session_manager: Arc<Self>) {
+        let cleanup_interval = session_manager.cleanup_interval;
         
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(cleanup_interval);

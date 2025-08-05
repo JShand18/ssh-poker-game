@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
     
     // Start the SSH server
     info!("🚀 Starting SSH server...");
-    run_server(server_config).await?;
+    run_server(database, &server_config.address, server_config.port).await?;
     
     Ok(())
 } 

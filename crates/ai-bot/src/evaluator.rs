@@ -9,20 +9,18 @@ pub enum Position {
     Late,
 }
 
-#[derive(Debug, Clone)]
 pub struct HandStrengthEvaluator {
-    core_evaluator: CoreHandEvaluator,
+    // We'll create a new evaluator for each use instead of storing it
 }
 
 impl HandStrengthEvaluator {
     pub fn new() -> Self {
-        Self {
-            core_evaluator: CoreHandEvaluator::new(),
-        }
+        Self {}
     }
 
     pub fn evaluate_hand(&self, cards: &[Card]) -> Hand {
-        self.core_evaluator.evaluate(cards)
+        let evaluator = CoreHandEvaluator::new();
+        evaluator.evaluate(cards)
     }
 
     pub fn calculate_hand_strength(&self, hole_cards: &[Card; 2], community_cards: &[Card]) -> f64 {
@@ -94,9 +92,9 @@ impl HandStrengthEvaluator {
     fn hand_to_strength(&self, hand: &Hand) -> f64 {
         use poker_engine::HandRank;
         
-        let base_strength = match hand.rank {
+        let base_strength = match hand.rank() {
             HandRank::HighCard => 0.05,
-            HandRank::Pair => 0.15,
+            HandRank::OnePair => 0.15,
             HandRank::TwoPair => 0.35,
             HandRank::ThreeOfAKind => 0.55,
             HandRank::Straight => 0.70,
@@ -107,7 +105,7 @@ impl HandStrengthEvaluator {
         };
 
         // Add fine-grained strength based on high cards within the hand type
-        let kicker_bonus = self.calculate_kicker_strength(&hand.cards);
+        let kicker_bonus = self.calculate_kicker_strength(hand.cards());
         (base_strength + kicker_bonus * 0.05).min(1.0)
     }
 
@@ -249,7 +247,7 @@ impl BettingHistory {
             return false;
         }
 
-        fold_count as f64 / total_actions as f64 < 0.3
+        (fold_count as f64 / total_actions as f64) < 0.3
     }
 }
 
