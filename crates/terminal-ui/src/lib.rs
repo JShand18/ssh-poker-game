@@ -18,9 +18,11 @@ pub mod app;
 pub mod components;
 pub mod error;
 pub mod ui;
+pub mod poker_table;
 
 pub use app::{App, AppState};
 pub use error::TuiError;
+pub use poker_table::PokerTableRenderer;
 
 /// Run the terminal UI application
 pub async fn run_tui() -> Result<()> {

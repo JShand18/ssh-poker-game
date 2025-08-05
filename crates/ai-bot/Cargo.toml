@@ -9,4 +9,10 @@ description = "AI bot for the poker game."
 keywords.workspace = true
 categories.workspace = true
 
-[dependencies] 
+[dependencies]
+poker-engine = { path = "../poker-engine" }
+rand = "0.8"
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+async-trait = "0.1" 

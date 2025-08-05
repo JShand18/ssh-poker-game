@@ -1,7 +1,7 @@
 [package]
 name = "ssh-server"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -14,17 +14,19 @@ name = "ssh-server"
 path = "src/main.rs"
 
 [dependencies]
-russh = "*"
-russh-keys = "*"
-tokio = { version = "1", features = ["full"] }
+russh = "0.44"
+russh-keys = "0.44"
+tokio = { version = "1.35", features = ["full"] }
 log = "0.4"
 poker-engine = { path = "../poker-engine" }
 anyhow = "1.0"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-env_logger = "0.10"
+env_logger = "0.11"
 terminal-ui = { path = "../terminal-ui" }
 futures = "0.3"
-base64ct = "=1.7.3"
 async-trait = "0.1"
-database = { path = "../database" } 
+database = { path = "../database" }
+argon2 = "0.5"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+crossterm = "0.27" 
