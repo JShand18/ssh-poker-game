@@ -6,14 +6,17 @@ use russh::{
     Channel, ChannelId, CryptoVec, MethodSet
 };
 use russh_keys::key;
+use russh_keys::key::KeyPair;
+use tokio::net::TcpListener;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{Mutex, mpsc};
 use terminal_ui::App;
-use database::Database;
+use data_store::Database;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use futures::SinkExt;
 use uuid::Uuid;
+use hybrid_metrics::{PokerMetrics, MonitoringConfig};
 
 pub mod config;
 pub mod error;
@@ -98,6 +101,7 @@ struct SshServerHandler {
     authenticated_user: Option<String>,
     session_id: Option<Uuid>,
     terminal_size: (u16, u16),
+    channel_id: Option<ChannelId>,
 }
 
 impl SshServerHandler {
@@ -108,6 +112,7 @@ impl SshServerHandler {
             authenticated_user: None,
             session_id: None,
             terminal_size: (80, 24), // Default terminal size
+            channel_id: None,
         }
     }
 
@@ -120,6 +125,29 @@ impl SshServerHandler {
             if let Ok(input_str) = String::from_utf8(data.to_vec()) {
                 for ch in input_str.chars() {
                     match ch {
+                        'n' | 'N' => {
+                            // Create a new table and join it
+                            let table_id = self.state.session_manager
+                                .create_table("New Table".to_string(), 6, 10, 20).await;
+                            if let Some(session_id) = self.session_id {
+                                if let Err(e) = self.state.session_manager.join_table(&session_id, &table_id, 1000).await {
+                                    warn!("Failed to join newly created table {}: {}", table_id, e);
+                                }
+                            }
+                        }
+                        '1'..='9' => {
+                            let idx = (ch as u8 - b'1') as usize;
+                            let tables = self.state.session_manager.list_tables().await;
+                            if let Some((table_id, _name, players, max_players)) = tables.get(idx).cloned() {
+                                if players < max_players {
+                                    if let Some(session_id) = self.session_id {
+                                        if let Err(e) = self.state.session_manager.join_table(&session_id, &table_id, 1000).await {
+                                            warn!("Failed to join table {}: {}", table_id, e);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         'f' | 'F' => {
                             // Fold action
                             let action = poker_engine::Action::Fold;
@@ -174,7 +202,7 @@ impl SshServerHandler {
     }
 
     async fn update_terminal_display(&self, session: &mut Session) -> Result<(), SshError> {
-        if let Some(session_id) = self.session_id {
+        if let (Some(session_id), Some(channel_id)) = (self.session_id, self.channel_id) {
             // Get current table state
             if let Some(table_id) = self.state.session_manager.get_player_table(&session_id).await {
                 if let Some(game_state) = self.state.session_manager.get_table_state(&table_id).await {
@@ -182,15 +210,12 @@ impl SshServerHandler {
                     let display = self.render_game_state(&game_state);
                     
                     // Send to terminal  
-                    // TODO: Store the actual channel ID from session open
-                    // For now, this won't work until we properly handle channels
-                    // session.data(channel_id, CryptoVec::from(display.as_bytes().to_vec()));
+                    let _ = session.data(channel_id, CryptoVec::from_slice(display.as_bytes()));
                 }
             } else {
                 // Show lobby/table selection
                 let lobby_display = self.render_lobby().await;
-                // TODO: Fix channel ID issue
-                // session.data(channel_id, CryptoVec::from(lobby_display.as_bytes().to_vec()));
+                let _ = session.data(channel_id, CryptoVec::from_slice(lobby_display.as_bytes()));
             }
         }
         
@@ -234,6 +259,9 @@ impl Handler for SshServerHandler {
         session: &mut Session,
     ) -> Result<bool, Self::Error> {
         debug!("Opening session channel for client {}", self.client_id);
+        
+        // Store the channel ID for later use
+        self.channel_id = Some(channel.id());
         
         // Accept the channel
         Ok(true)
@@ -337,52 +365,61 @@ impl Handler for SshServerHandler {
         Ok(())
     }
 
-    // TODO: Fix trait method signatures - commenting out for now
-    /*
-    async fn channel_pty_request(
+
+    async fn pty_request(
         &mut self,
-        channel: ChannelId,
-        term: &str,
+        _channel: ChannelId,
+        _term: &str,
         col_width: u32,
         row_height: u32,
-        pix_width: u32,
-        pix_height: u32,
-        modes: &[(russh::ptyrequest::Pty, u32)],
+        _pix_width: u32,
+        _pix_height: u32,
+        _modes: &[(russh::Pty, u32)],
         session: &mut Session,
     ) -> Result<(), Self::Error> {
-        debug!("PTY request - term: {}, size: {}x{}", term, col_width, row_height);
-        
+        debug!("PTY request - size: {}x{}", col_width, row_height);
         self.terminal_size = (col_width as u16, row_height as u16);
-        
-        // Send initial display after PTY is established
         if self.authenticated_user.is_some() {
             self.update_terminal_display(session).await?;
         }
-        
         Ok(())
     }
 
-    async fn channel_window_change_request(
+    async fn shell_request(
         &mut self,
         channel: ChannelId,
+        session: &mut Session,
+    ) -> Result<(), Self::Error> {
+        debug!("Shell requested on channel {}", channel);
+        self.channel_id = Some(channel);
+        self.update_terminal_display(session).await?;
+        Ok(())
+    }
+
+    async fn window_change_request(
+        &mut self,
+        _channel: ChannelId,
         col_width: u32,
         row_height: u32,
-        pix_width: u32,
-        pix_height: u32,
+        _pix_width: u32,
+        _pix_height: u32,
         session: &mut Session,
     ) -> Result<(), Self::Error> {
         debug!("Window size changed to {}x{}", col_width, row_height);
-        
         self.terminal_size = (col_width as u16, row_height as u16);
-        
-        // Refresh display with new size
         if self.authenticated_user.is_some() {
             self.update_terminal_display(session).await?;
         }
-        
         Ok(())
     }
-    */
+
+    async fn channel_eof(
+        &mut self,
+        _channel: ChannelId,
+        _session: &mut Session,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
 
 }
 
@@ -420,26 +457,44 @@ impl Server for SshServer {
 }
 
 pub async fn run_server(database: Database, bind_address: &str, port: u16) -> Result<()> {
-    info!("Setting up SSH server configuration");
-    
-    let server_config = Config {
-        inactivity_timeout: Some(std::time::Duration::from_secs(3600)), // 1 hour
-        auth_rejection_time: std::time::Duration::from_secs(3),
-        auth_rejection_time_initial: Some(std::time::Duration::from_secs(0)),
-        keys: vec![russh_keys::key::KeyPair::generate_ed25519().unwrap()],
-        ..Default::default()
-    };
-    let server_config = Arc::new(server_config);
-    let server = SshServer::new(database).await;
+    info!("Configuring server for address: {}:{}", bind_address, port);
 
-    info!("Starting SSH server on {}:{}", bind_address, port);
-    info!("Authentication: password=true, pubkey=true");
-    
-    let bind_addr = format!("{}:{}", bind_address, port);
+    // Start Prometheus metrics server in background (free tier)
+    let metrics = std::sync::Arc::new(
+        PokerMetrics::new(MonitoringConfig { enable_datadog: false, ..Default::default() })?
+    );
+    let metrics_clone = metrics.clone();
+    tokio::spawn(async move {
+        if let Err(e) = hybrid_metrics::start_metrics_server(metrics_clone, 9090).await {
+            warn!("metrics server failed: {}", e);
+        }
+    });
 
-    // TODO: Fix russh server API usage - for now return success for compilation
-    info!("SSH server would start on {}", bind_addr);
-    Ok(())
+    // Build russh server configuration
+    let mut ssh_config = Config::default();
+    ssh_config.inactivity_timeout = Some(std::time::Duration::from_secs(3600));
+    ssh_config.auth_rejection_time = std::time::Duration::from_secs(3);
+    ssh_config.auth_rejection_time_initial = Some(std::time::Duration::from_secs(0));
+    ssh_config.methods = MethodSet::PASSWORD; // Enable password auth for MVP
+    ssh_config.keys.push(KeyPair::generate_ed25519().unwrap());
+    let ssh_config = std::sync::Arc::new(ssh_config);
+
+    // Bind and run russh server (accept loop)
+    let addr = format!("{}:{}", bind_address, port);
+    info!("Starting SSH server on {}", addr);
+    let listener = TcpListener::bind(&addr).await?;
+    loop {
+        let (stream, peer) = listener.accept().await?;
+        let config = ssh_config.clone();
+        let db = database.clone();
+        tokio::spawn(async move {
+            let mut server_factory = SshServer::new(db).await;
+            let handler = server_factory.new_client(Some(peer));
+            if let Err(e) = russh::server::run_stream(config, stream, handler).await {
+                warn!("SSH connection from {} ended with error: {}", peer, e);
+            }
+        });
+    }
 }
 
 #[cfg(test)]
@@ -477,4 +532,4 @@ mod tests {
         assert_eq!(state.session_count().await, 0);
         assert_eq!(state.table_count().await, 0);
     }
-} 
+}

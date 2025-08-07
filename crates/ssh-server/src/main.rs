@@ -1,6 +1,6 @@
 use log::info;
 use ssh_server::{run_server, ServerConfig};
-use database::{Database, DatabaseConfig};
+use data_store::{Database, DatabaseConfig};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -23,6 +23,24 @@ pub struct NewUser {
     pub password_hash: String,
 }
 
+/// User session model for tracking active SSH connections
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserSession {
+    pub id: String,
+    pub user_id: String,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub is_active: bool,
+    pub last_activity: DateTime<Utc>,
+}
+
+/// New session data for creation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewSession {
+    pub user_id: String,
+    pub expires_at: DateTime<Utc>,
+}
+
 /// Game session model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Game {
@@ -103,6 +121,21 @@ impl User {
             updated_at: now,
             is_active: true,
             last_login: None,
+        }
+    }
+}
+
+impl UserSession {
+    /// Create a new user session with generated ID and timestamps
+    pub fn new(user_id: String, expires_at: DateTime<Utc>) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4().to_string(),
+            user_id,
+            created_at: now,
+            expires_at,
+            is_active: true,
+            last_activity: now,
         }
     }
 }

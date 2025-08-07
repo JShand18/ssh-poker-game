@@ -1,6 +1,6 @@
 use anyhow::{Result, anyhow};
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::{rand_core::OsRng, SaltString}};
-use database::{Database, models::User};
+use data_store::{Database, models::User};
 use russh_keys::{key, PublicKeyBase64};
 use std::collections::HashMap;
 use log::{error, warn, info, debug};
@@ -128,7 +128,7 @@ impl SecureAuthService {
         info!("Creating new user: {}", username);
         let password_hash = self.hash_password(password)?;
         
-        let user = database::models::NewUser {
+        let user = data_store::models::NewUser {
             username: username.to_string(),
             email: Some(email.to_string()),
             password_hash,

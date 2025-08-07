@@ -7,6 +7,7 @@ pub async fn create_tables(pool: &SqlitePool) -> DatabaseResult<()> {
     info!("Creating database tables");
     
     create_users_table(pool).await?;
+    create_user_sessions_table(pool).await?;
     create_games_table(pool).await?;
     create_game_participants_table(pool).await?;
     create_player_stats_table(pool).await?;
@@ -37,6 +38,29 @@ async fn create_users_table(pool: &SqlitePool) -> DatabaseResult<()> {
     
     sqlx::query(sql).execute(pool).await?;
     info!("Users table created");
+    Ok(())
+}
+
+/// Create the user_sessions table
+async fn create_user_sessions_table(pool: &SqlitePool) -> DatabaseResult<()> {
+    let sql = r#"
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            is_active BOOLEAN NOT NULL DEFAULT 1,
+            last_activity TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_sessions_user ON user_sessions(user_id);
+        CREATE INDEX IF NOT EXISTS idx_sessions_active ON user_sessions(is_active);
+        CREATE INDEX IF NOT EXISTS idx_sessions_expires ON user_sessions(expires_at);
+    "#;
+    
+    sqlx::query(sql).execute(pool).await?;
+    info!("User sessions table created");
     Ok(())
 }
 
@@ -151,7 +175,7 @@ async fn create_game_events_table(pool: &SqlitePool) -> DatabaseResult<()> {
 
 /// Check if database tables exist and are properly set up
 pub async fn verify_schema(pool: &SqlitePool) -> DatabaseResult<bool> {
-    let tables = vec!["users", "games", "game_participants", "player_stats", "game_events"];
+    let tables = vec!["users", "user_sessions", "games", "game_participants", "player_stats", "game_events"];
     
     for table in tables {
         let row = sqlx::query("SELECT name FROM sqlite_master WHERE type='table' AND name=?")

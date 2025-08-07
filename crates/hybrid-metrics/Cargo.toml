@@ -1,0 +1,40 @@
+[package]
+name = "hybrid-metrics"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Hybrid monitoring with Prometheus (free) and Datadog (tiered) for cost optimization."
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Prometheus metrics (always free)
+prometheus = "0.13"
+prometheus-static-metric = "0.5"
+
+# Datadog integration (optional, cost-optimized)
+dogstatsd = "0.8"
+
+# Core dependencies
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+thiserror = "1.0"
+log = "0.4"
+tracing = "0.1"
+
+# HTTP server for metrics endpoint
+axum = "0.7"
+tower = "0.4"
+
+# Async traits
+async-trait = "0.1"
+
+# Time handling for health check
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+tokio-test = "0.4"

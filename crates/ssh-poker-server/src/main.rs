@@ -1,5 +1,5 @@
-use ssh_server::run_server;
-use database::Database;
+use wish_server::run_server;
+use data_store::Database;
 use clap::{Parser, ValueEnum};
 use colored::*;
 use log::{info, error};
@@ -44,14 +44,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Initialize database
     println!("{}", "🗄️  Initializing database...".cyan());
-    let database = if Path::new(&cli.database).exists() {
-        Database::new(&cli.database).await?
-    } else {
-        println!("   Creating new database: {}", cli.database);
-        let db = Database::new(&cli.database).await?;
-        db.migrate().await?;
-        db
+    let db_config = data_store::DatabaseConfig {
+        database_path: cli.database.clone(),
+        create_if_missing: true,
+        max_connections: 10,
     };
+    let database = Database::new(db_config).await?;
     
     // Create demo user if requested
     if cli.create_demo_user {
@@ -108,7 +106,7 @@ fn print_banner() {
 }
 
 async fn create_demo_user(database: &Database) -> Result<(), Box<dyn std::error::Error>> {
-    use ssh_server::SecureAuthService;
+    use wish_server::SecureAuthService;
     
     let mut auth_service = SecureAuthService::new(database.clone());
     

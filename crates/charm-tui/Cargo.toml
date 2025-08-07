@@ -1,0 +1,39 @@
+[package]
+name = "charm-tui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Beautiful terminal UI using Rust's best TUI libraries (ratatui + owo-colors) for Charm.sh-style poker experience."
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Core poker logic
+poker-engine = { path = "../poker-engine" }
+
+# Best-in-class Rust TUI stack (Charm.sh-style experience)
+# Primary TUI framework (successor to tui-rs, most mature)
+ratatui = "0.28"
+# Cross-platform terminal backend (most popular choice)
+crossterm = { version = "0.28", features = ["event-stream"] }
+# Zero-cost terminal styling (Lip Gloss alternative)
+owo-colors = "4.0"
+# Additional dependencies for a complete TUI experience
+serde_json = "1.0"
+env_logger = "0.11"
+
+# Terminal and async support
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+log = "0.4"
+futures = "0.3"
+
+# Utilities
+uuid = { version = "1.0", features = ["v4"] }
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+tokio-test = "0.4"

@@ -43,12 +43,21 @@ impl Database {
     pub async fn new(config: DatabaseConfig) -> Result<Self> {
         info!("Connecting to database: {}", config.database_path);
         
-        // Create database file if it doesn't exist and create_if_missing is true
-        if config.create_if_missing && !Path::new(&config.database_path).exists() {
+        // Build SQLite DSN and ensure parent directory exists if needed
+        let database_url = if config.database_path == ":memory:" {
+            "sqlite::memory:".to_string()
+        } else {
+            let db_path = Path::new(&config.database_path);
+            if config.create_if_missing {
+                if let Some(parent) = db_path.parent() {
+                    if !parent.as_os_str().is_empty() && !parent.exists() {
+                        std::fs::create_dir_all(parent)?;
+                    }
+                }
+            }
             info!("Creating new database file: {}", config.database_path);
-        }
-
-        let database_url = format!("sqlite:{}", config.database_path);
+            format!("sqlite://{}", config.database_path)
+        };
         
         let pool = sqlx::sqlite::SqlitePoolOptions::new()
             .max_connections(config.max_connections)
@@ -117,8 +126,37 @@ impl Database {
         }
     }
 
+    /// Create a session for a user
+    pub async fn create_session(&self, user_id: &str, duration_hours: i64) -> DatabaseResult<models::UserSession> {
+        let expires_at = chrono::Utc::now() + chrono::Duration::hours(duration_hours);
+        let new_session = models::NewSession {
+            user_id: user_id.to_string(),
+            expires_at,
+        };
+        operations::SessionOperations::create(&self.pool, new_session).await
+    }
+
+    /// Get session by ID
+    pub async fn get_session(&self, session_id: &str) -> DatabaseResult<Option<models::UserSession>> {
+        operations::SessionOperations::find_by_id(&self.pool, session_id).await
+    }
+
+    /// Update session activity
+    pub async fn update_session_activity(&self, session_id: &str) -> DatabaseResult<()> {
+        operations::SessionOperations::update_activity(&self.pool, session_id).await
+    }
+
+    /// Deactivate session (logout)
+    pub async fn deactivate_session(&self, session_id: &str) -> DatabaseResult<()> {
+        operations::SessionOperations::deactivate(&self.pool, session_id).await
+    }
+
+    /// Clean up expired sessions
+    pub async fn cleanup_expired_sessions(&self) -> DatabaseResult<usize> {
+        operations::SessionOperations::cleanup_expired(&self.pool).await
+    }
+
     /// Create a test/in-memory database for testing
-    #[cfg(test)]
     pub async fn new_in_memory() -> DatabaseResult<Self> {
         let config = DatabaseConfig {
             database_path: ":memory:".to_string(),

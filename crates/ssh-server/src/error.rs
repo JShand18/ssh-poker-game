@@ -7,6 +7,8 @@ pub enum SshError {
     Io(#[from] std::io::Error),
     #[error("Russh error: {0}")]
     Russh(#[from] russh::Error),
+    #[error("Internal error: {0}")]
+    Internal(String),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }

@@ -2,7 +2,7 @@ use crate::{
     Card, Deck, 
     hand::{Hand, HandEvaluator},
     player::{Player, PlayerStatus}, 
-    errors::{PokerError, Result}, 
+    errors::Result, 
     fsm::GameStateFSM,
     betting::{BettingRules, BettingRound, BettingValidator, PotManager}
 };
@@ -65,8 +65,15 @@ impl GameState {
         dealer_position: usize,
     ) -> Self {
         let num_players = players.len();
-        let small_blind_position = (dealer_position + 1) % num_players;
-        let big_blind_position = (dealer_position + 2) % num_players;
+        let (small_blind_position, big_blind_position) = if num_players >= 2 {
+            (
+                (dealer_position + 1) % num_players,
+                (dealer_position + 2) % num_players,
+            )
+        } else {
+            // Defer proper position assignment until players join
+            (0, 0)
+        };
         let betting_rules = BettingRules::new(small_blind, big_blind);
 
         Self {
@@ -455,7 +462,7 @@ impl GameState {
             
             let winners: Vec<usize> = active_players
                 .iter()
-                .filter(|(idx, hand)| {
+                .filter(|(_idx, hand)| {
                     let is_winner = hand.cmp(best_hand) == std::cmp::Ordering::Equal;
                     is_winner
                 })

@@ -11,11 +11,12 @@ categories.workspace = true
 
 [dependencies]
 poker-engine = { path = "../poker-engine" }
-ssh-server = { path = "../ssh-server" }
-terminal-ui = { path = "../terminal-ui" }
-database = { path = "../database" }
+wish-server = { path = "../wish-server" }
+charm-tui = { path = "../charm-tui" }
+data-store = { path = "../data-store" }
 ai-bot = { path = "../ai-bot" }
 clap = { version = "4.5", features = ["derive"] }
 colored = "2.1"
 tokio = { version = "1.35", features = ["full"] }
 env_logger = "0.11" 
+log = "0.4"

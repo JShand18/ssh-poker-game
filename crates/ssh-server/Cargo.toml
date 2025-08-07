@@ -24,9 +24,15 @@ thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 env_logger = "0.11"
 terminal-ui = { path = "../terminal-ui" }
+charm-tui = { path = "../charm-tui" }
 futures = "0.3"
 async-trait = "0.1"
-database = { path = "../database" }
+data-store = { path = "../data-store" }
 argon2 = "0.5"
 uuid = { version = "1.0", features = ["v4", "serde"] }
-crossterm = "0.27" 
+crossterm = "0.27"
+chrono = { version = "0.4", features = ["serde"] }
+hybrid-metrics = { path = "../hybrid-metrics" }
+
+[dev-dependencies]
+tempfile = "3.8" 

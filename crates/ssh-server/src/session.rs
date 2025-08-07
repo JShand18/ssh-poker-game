@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, mpsc};
 use uuid::Uuid;
-use database::models::User;
+use data_store::models::User;
 use poker_engine::{GameState, Action, Player};
 use terminal_ui::App;
 
@@ -363,13 +363,14 @@ mod tests {
 
     fn create_test_user(username: &str) -> User {
         User {
-            id: Uuid::new_v4(),
+            id: Uuid::new_v4().to_string(),
             username: username.to_string(),
-            email: format!("{}@example.com", username),
+            email: Some(format!("{}@example.com", username)),
             password_hash: "test_hash".to_string(),
-            public_key: None,
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
+            is_active: true,
+            last_login: None,
         }
     }
 

@@ -1,6 +1,6 @@
 use sqlx::{SqlitePool, Row};
 use chrono::Utc;
-use crate::models::{User, NewUser, Game, PlayerStats, GameStatus};
+use crate::models::{User, NewUser, Game, PlayerStats, GameStatus, UserSession, NewSession};
 use crate::error::{DatabaseError, DatabaseResult};
 use log::info;
 
@@ -156,6 +156,99 @@ impl UserOperations {
         }
 
         Ok(users)
+    }
+}
+
+/// Session operations
+pub struct SessionOperations;
+
+impl SessionOperations {
+    /// Create a new user session
+    pub async fn create(pool: &SqlitePool, new_session: NewSession) -> DatabaseResult<UserSession> {
+        let session = UserSession::new(new_session.user_id, new_session.expires_at);
+        
+        sqlx::query(
+            r#"
+            INSERT INTO user_sessions (id, user_id, created_at, expires_at, is_active, last_activity)
+            VALUES (?, ?, ?, ?, ?, ?)
+            "#
+        )
+        .bind(&session.id)
+        .bind(&session.user_id)
+        .bind(session.created_at.to_rfc3339())
+        .bind(session.expires_at.to_rfc3339())
+        .bind(session.is_active)
+        .bind(session.last_activity.to_rfc3339())
+        .execute(pool)
+        .await?;
+
+        info!("Created session for user: {}", session.user_id);
+        Ok(session)
+    }
+
+    /// Find session by ID
+    pub async fn find_by_id(pool: &SqlitePool, session_id: &str) -> DatabaseResult<Option<UserSession>> {
+        let row = sqlx::query(
+            "SELECT id, user_id, created_at, expires_at, is_active, last_activity FROM user_sessions WHERE id = ? AND is_active = 1"
+        )
+        .bind(session_id)
+        .fetch_optional(pool)
+        .await?;
+
+        match row {
+            Some(row) => {
+                let session = UserSession {
+                    id: row.get("id"),
+                    user_id: row.get("user_id"),
+                    created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<String, _>("created_at"))
+                        .map_err(|e| DatabaseError::OperationFailed(format!("Date parse error: {}", e)))?
+                        .with_timezone(&chrono::Utc),
+                    expires_at: chrono::DateTime::parse_from_rfc3339(&row.get::<String, _>("expires_at"))
+                        .map_err(|e| DatabaseError::OperationFailed(format!("Date parse error: {}", e)))?
+                        .with_timezone(&chrono::Utc),
+                    is_active: row.get("is_active"),
+                    last_activity: chrono::DateTime::parse_from_rfc3339(&row.get::<String, _>("last_activity"))
+                        .map_err(|e| DatabaseError::OperationFailed(format!("Date parse error: {}", e)))?
+                        .with_timezone(&chrono::Utc),
+                };
+                Ok(Some(session))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Update session activity
+    pub async fn update_activity(pool: &SqlitePool, session_id: &str) -> DatabaseResult<()> {
+        let now = Utc::now();
+        sqlx::query("UPDATE user_sessions SET last_activity = ? WHERE id = ? AND is_active = 1")
+            .bind(now.to_rfc3339())
+            .bind(session_id)
+            .execute(pool)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Deactivate session (logout)
+    pub async fn deactivate(pool: &SqlitePool, session_id: &str) -> DatabaseResult<()> {
+        sqlx::query("UPDATE user_sessions SET is_active = 0 WHERE id = ?")
+            .bind(session_id)
+            .execute(pool)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Clean up expired sessions
+    pub async fn cleanup_expired(pool: &SqlitePool) -> DatabaseResult<usize> {
+        let now = Utc::now();
+        let result = sqlx::query("UPDATE user_sessions SET is_active = 0 WHERE expires_at < ? AND is_active = 1")
+            .bind(now.to_rfc3339())
+            .execute(pool)
+            .await?;
+
+        info!("Cleaned up {} expired sessions", result.rows_affected());
+        Ok(result.rows_affected() as usize)
     }
 }
 
