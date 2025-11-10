@@ -1,9 +1,9 @@
-use wish_server::run_server;
+use ssh_poker_server::run_poker_server;
 use data_store::Database;
-use clap::{Parser, ValueEnum};
-use colored::*;
+use clap::Parser;
+use colored::Colorize;
 use log::{info, error};
-use std::path::Path;
+
 
 #[derive(Parser)]
 #[command(name = "ssh-poker-server")]
@@ -83,7 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting SSH server on {}:{}", cli.address, cli.port);
     
     // Run the server
-    if let Err(e) = run_server(database, &cli.address, cli.port).await {
+    if let Err(e) = run_poker_server(database, &cli.address, cli.port).await {
         error!("Server error: {}", e);
         eprintln!("{} {}", "❌ Server failed:".red().bold(), e);
         std::process::exit(1);
@@ -106,7 +106,7 @@ fn print_banner() {
 }
 
 async fn create_demo_user(database: &Database) -> Result<(), Box<dyn std::error::Error>> {
-    use wish_server::SecureAuthService;
+    use ssh_poker_server::SecureAuthService;
     
     let mut auth_service = SecureAuthService::new(database.clone());
     

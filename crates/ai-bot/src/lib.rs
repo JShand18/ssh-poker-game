@@ -1,6 +1,6 @@
-use poker_engine::{Action, GameState, Player, Card, Rank, Suit, HandEvaluator, Hand};
+use poker_engine::{Action, GameState, Card, Rank, Hand};
 use rand::{Rng, thread_rng};
-use log::{debug, info, warn};
+use log::{debug, info};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use async_trait::async_trait;
@@ -216,9 +216,7 @@ impl AIBot {
     fn evaluate_flop_strength(&self, hole_cards: &[Card; 2], community_cards: &[Card]) -> f64 {
         let mut all_cards = hole_cards.to_vec();
         all_cards.extend_from_slice(community_cards);
-        
-        let evaluator = HandEvaluator::new();
-        let hand = evaluator.evaluate(&all_cards);
+        let hand = self.hand_evaluator.evaluate_hand(&all_cards);
         
         // Convert hand rank to strength (higher rank = higher strength)
         self.hand_rank_to_strength(&hand)
@@ -227,9 +225,7 @@ impl AIBot {
     fn evaluate_turn_strength(&self, hole_cards: &[Card; 2], community_cards: &[Card]) -> f64 {
         let mut all_cards = hole_cards.to_vec();
         all_cards.extend_from_slice(community_cards);
-        
-        let evaluator = HandEvaluator::new();
-        let hand = evaluator.evaluate(&all_cards);
+        let hand = self.hand_evaluator.evaluate_hand(&all_cards);
         
         self.hand_rank_to_strength(&hand)
     }
@@ -237,9 +233,7 @@ impl AIBot {
     fn evaluate_river_strength(&self, hole_cards: &[Card; 2], community_cards: &[Card]) -> f64 {
         let mut all_cards = hole_cards.to_vec();
         all_cards.extend_from_slice(community_cards);
-        
-        let evaluator = HandEvaluator::new();
-        let hand = evaluator.evaluate(&all_cards);
+        let hand = self.hand_evaluator.evaluate_hand(&all_cards);
         
         self.hand_rank_to_strength(&hand)
     }
@@ -281,13 +275,22 @@ impl AIBot {
         model.total_actions += 1;
 
         match action {
-            Action::Fold => model.fold_frequency = (model.fold_frequency * (model.total_actions - 1) as f64 + 1.0) / model.total_actions as f64,
+            Action::Fold => {
+                model.fold_frequency = (model.fold_frequency * (model.total_actions - 1) as f64 + 1.0) / model.total_actions as f64;
+                // Folding more indicates tighter play
+                model.tightness_factor = (model.tightness_factor * 0.9 + 0.1).min(1.0);
+            }
             Action::Raise(_) | Action::Bet(_) => {
                 model.raise_frequency = (model.raise_frequency * (model.total_actions - 1) as f64 + 1.0) / model.total_actions as f64;
                 model.aggression_factor = (model.aggression_factor * 0.9 + 0.1).min(1.0);
+                // Betting/raising indicates looser play
+                model.tightness_factor = (model.tightness_factor * 0.95).max(0.0);
+                // Update bluff frequency estimate
+                model.bluff_frequency = (model.bluff_frequency * 0.95 + 0.05 * 0.15).min(0.4);
             }
             Action::Call => {
                 // Calling suggests moderate play
+                model.tightness_factor = (model.tightness_factor * 0.98 + 0.02 * 0.5).clamp(0.0, 1.0);
             }
             Action::Check => {
                 // Checking suggests passive play
@@ -296,6 +299,8 @@ impl AIBot {
             Action::AllIn => {
                 model.aggression_factor = (model.aggression_factor * 0.8 + 0.2).min(1.0);
                 model.raise_frequency = (model.raise_frequency * 0.9 + 0.1).min(1.0);
+                // All-in could be very tight (nuts) or very loose (bluff)
+                model.bluff_frequency = (model.bluff_frequency * 0.9 + 0.1 * 0.25).min(0.5);
             }
         }
     }
@@ -334,6 +339,23 @@ impl PokerBot for AIBot {
         // Determine position (early, middle, late)
         let position = self.determine_position(game_state, player_id);
 
+        // Calculate if we should bluff
+        let should_bluff = self.should_bluff(hand_strength);
+        
+        // Get average opponent stats
+        let (avg_aggression, avg_tightness) = if self.opponent_models.is_empty() {
+            (None, None)
+        } else {
+            let total_models = self.opponent_models.len() as f64;
+            let sum_aggression: f64 = self.opponent_models.values()
+                .map(|m| m.aggression_factor)
+                .sum();
+            let sum_tightness: f64 = self.opponent_models.values()
+                .map(|m| m.tightness_factor)
+                .sum();
+            (Some(sum_aggression / total_models), Some(sum_tightness / total_models))
+        };
+
         // Use strategy to decide action
         let mut decision_context = strategy::DecisionContext {
             hand_strength,
@@ -347,6 +369,9 @@ impl PokerBot for AIBot {
             pot_size: game_state.pot_manager.total_pot(),
             current_bet: game_state.current_bet,
             player_chips: player.chips,
+            should_bluff,
+            opponent_aggression: avg_aggression,
+            opponent_tightness: avg_tightness,
         };
 
         let action = self.strategy.decide_action(&mut decision_context)?;
@@ -455,7 +480,7 @@ impl AIBot {
                     optimal_action
                 }
             }
-            Action::Bet(amount) => {
+            Action::Bet(_amount) => {
                 // Sometimes check instead of bet
                 if valid_actions.contains(&Action::Check) && rng.gen::<f64>() < 0.3 {
                     Action::Check
@@ -471,7 +496,7 @@ impl AIBot {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use poker_engine::{Player, GameState};
+    use poker_engine::{Player, GameState, Suit};
 
     fn create_test_game_state() -> GameState {
         let players = vec![

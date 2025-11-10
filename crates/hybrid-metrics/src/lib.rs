@@ -369,7 +369,7 @@ async fn health_check() -> Result<Response<String>, StatusCode> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
+
     
     #[tokio::test]
     async fn test_metrics_creation() {

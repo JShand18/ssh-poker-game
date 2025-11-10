@@ -396,7 +396,7 @@ mod tests {
     #[test]
     fn test_personality_modifier() {
         let mut modifier = PersonalityModifier::new(BotPersonality::Balanced, DifficultyLevel::Advanced);
-        let initial_aggression = modifier.get_traits().aggression;
+        let _initial_aggression = modifier.get_traits().aggression;
         
         // Simulate adapting to a very aggressive table
         modifier.adapt_to_table(0.9, 0.5);

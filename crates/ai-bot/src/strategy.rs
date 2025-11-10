@@ -1,5 +1,5 @@
 use poker_engine::{Action, GamePhase};
-use crate::{BotError, Result};
+use crate::Result;
 use crate::evaluator::Position;
 use async_trait::async_trait;
 use rand::{Rng, thread_rng};
@@ -17,6 +17,9 @@ pub struct DecisionContext {
     pub pot_size: u64,
     pub current_bet: u64,
     pub player_chips: u64,
+    pub should_bluff: bool,
+    pub opponent_aggression: Option<f64>,
+    pub opponent_tightness: Option<f64>,
 }
 
 #[async_trait]
@@ -247,7 +250,7 @@ impl BalancedStrategy {
 #[async_trait]
 impl PokerStrategy for BalancedStrategy {
     fn decide_action(&mut self, context: &mut DecisionContext) -> Result<Action> {
-        let mut rng = thread_rng();
+        let _rng = thread_rng();
         
         // Position-based adjustments
         let position_modifier = match context.position {
@@ -313,7 +316,6 @@ impl BalancedStrategy {
     }
 
     fn postflop_strategy(&self, context: &DecisionContext, hand_strength: f64) -> Result<Action> {
-        let mut rng = thread_rng();
         
         if hand_strength > 0.6 {
             // Good hands - bet for value
@@ -335,8 +337,8 @@ impl BalancedStrategy {
             }
         }
 
-        // Bluff occasionally with weak hands
-        if hand_strength < 0.4 && rng.gen::<f64>() < 0.15 {
+        // Bluff if we should and have weak hands
+        if hand_strength < 0.4 && context.should_bluff {
             if context.valid_actions.contains(&Action::Bet(50)) {
                 let bluff_amount = (context.pot_size / 2).max(25).min(context.player_chips / 10);
                 return Ok(Action::Bet(bluff_amount));
@@ -422,6 +424,9 @@ mod tests {
             pot_size: 100,
             current_bet: 20,
             player_chips: 1000,
+            should_bluff: false,
+            opponent_aggression: None,
+            opponent_tightness: None,
         }
     }
 

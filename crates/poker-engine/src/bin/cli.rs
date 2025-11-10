@@ -204,7 +204,7 @@ fn format_action(action: &Action) -> String {
 }
 
 fn show_hands(game: &GameState) {
-    for (i, player) in game.players.iter().enumerate() {
+    for (_i, player) in game.players.iter().enumerate() {
         if player.is_active() {
             if let Some(hole_cards) = &player.hole_cards {
                 print!("{}'s cards: ", player.name);

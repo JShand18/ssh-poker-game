@@ -2,23 +2,19 @@
 resolver = "2"
 members = [
     "crates/poker-engine",
-    "crates/charm-tui",
-    "crates/wish-server", 
+    "crates/poker-tui",
     "crates/data-store",
     "crates/ai-bot",
     "crates/hybrid-metrics",
-    "crates/terminal-ui",
-    "crates/ssh-server",
     "crates/ssh-poker-server",
 ]
 
 [workspace.package]
-name = "ssh-poker-charm"
 version = "0.2.0"
 edition = "2021"
 authors = ["AI Assistant <assistant@example.com>"]
 license = "MIT"
-repository = "https://github.com/user/ssh-poker-charm"
-description = "A beautiful SSH-accessible poker game with Charm.sh TUI, hosted on Digital Ocean with Datadog observability."
-keywords = ["poker", "game", "terminal", "ssh", "rust", "charm", "bubbletea"]
+repository = "https://github.com/user/ssh-poker-game"
+description = "A beautiful SSH-accessible poker game with casino-themed TUI, hosted on Digital Ocean with Datadog observability."
+keywords = ["poker", "game", "terminal", "ssh", "rust", "casino", "tui"]
 categories = ["games", "command-line-utilities"] 

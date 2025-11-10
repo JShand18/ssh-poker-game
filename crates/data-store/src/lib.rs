@@ -113,7 +113,7 @@ impl Database {
     pub async fn update_user_password(&self, username: &str, password_hash: &str) -> DatabaseResult<()> {
         // First get the user
         let user = self.get_user_by_username(username).await?;
-        if let Some(user) = user {
+        if let Some(_user) = user {
             sqlx::query("UPDATE users SET password_hash = ?, updated_at = ? WHERE username = ?")
                 .bind(password_hash)
                 .bind(chrono::Utc::now().to_rfc3339())

@@ -5,18 +5,39 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Main server executable for the SSH poker game."
+description = "SSH-accessible multiplayer poker game server with casino-themed TUI."
 keywords.workspace = true
 categories.workspace = true
 
+[[bin]]
+name = "ssh-poker-server"
+path = "src/main.rs"
+
+[[bin]]
+name = "create-user"
+path = "src/bin/create_user.rs"
+
 [dependencies]
+russh = "0.44"
+russh-keys = "0.44"
+tokio = { version = "1.35", features = ["full"] }
+log = "0.4"
 poker-engine = { path = "../poker-engine" }
-wish-server = { path = "../wish-server" }
-charm-tui = { path = "../charm-tui" }
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+env_logger = "0.11"
+poker-tui = { path = "../poker-tui" }
+futures = "0.3"
+async-trait = "0.1"
 data-store = { path = "../data-store" }
-ai-bot = { path = "../ai-bot" }
+argon2 = "0.5"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+crossterm = "0.27"
+chrono = { version = "0.4", features = ["serde"] }
+hybrid-metrics = { path = "../hybrid-metrics" }
 clap = { version = "4.5", features = ["derive"] }
 colored = "2.1"
-tokio = { version = "1.35", features = ["full"] }
-env_logger = "0.11" 
-log = "0.4"
+
+[dev-dependencies]
+tempfile = "3.8" 
