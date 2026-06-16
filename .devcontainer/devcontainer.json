@@ -1,0 +1,19 @@
+{
+  "name": "ssh-poker-game",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "rust-lang.rust-analyzer",
+        "zxh404.vscode-proto3",
+        "tamasfe.even-better-toml"
+      ]
+    }
+  },
+  "remoteUser": "vscode",
+  "forwardPorts": [2222, 50051],
+  "postCreateCommand": "go version && cargo --version && protoc --version && echo \"protoc-gen-go: $(command -v protoc-gen-go)\" && echo \"buf: $(buf --version)\""
+}
