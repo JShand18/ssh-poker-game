@@ -140,24 +140,21 @@ impl PokerApp {
                 }
                 
                 // Global input handling
-                match input {
-                    InputEvent::Key(key) => {
-                        match key.code {
-                            crossterm::event::KeyCode::Char('q') => {
-                                self.should_quit = true;
-                            }
-                            crossterm::event::KeyCode::F(1) => {
-                                // Toggle between lobby and game for demo
-                                match self.state {
-                                    AppState::Lobby => self.transition_to_state(AppState::InGame),
-                                    AppState::InGame => self.transition_to_state(AppState::Lobby),
-                                    _ => {}
-                                }
-                            }
-                            _ => {}
+                if let InputEvent::Key(key) = input {
+                    match key.code {
+                        crossterm::event::KeyCode::Char('q') => {
+                            self.should_quit = true;
                         }
+                        crossterm::event::KeyCode::F(1) => {
+                            // Toggle between lobby and game for demo
+                            match self.state {
+                                AppState::Lobby => self.transition_to_state(AppState::InGame),
+                                AppState::InGame => self.transition_to_state(AppState::Lobby),
+                                _ => {}
+                            }
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
             
@@ -305,7 +302,7 @@ mod tests {
     #[test]
     fn test_poker_app_creation() {
         let app = PokerApp::new().unwrap();
-        assert_eq!(app.state(), &AppState::Lobby);
+        assert_eq!(app.state(), &AppState::Auth);
         assert!(!app.should_quit());
     }
     

@@ -1,394 +1,317 @@
-# Terminal-Based Multiplayer Poker Game
+# 🎰 SSH Poker Game - Casino Terminal Experience
 
-A production-ready SSH-accessible terminal-based multiplayer Texas Hold'em poker game implemented in Rust.
+A production-ready SSH-accessible multiplayer Texas Hold'em poker game with a rich casino-themed terminal UI, implemented in Rust.
 
-## Overview
+## ✨ Recent Updates (November 2024)
 
-This project implements a feature-rich, secure, and high-performance poker game server that players can access via SSH. The system supports multiple concurrent poker tables, AI bots with configurable difficulty levels, and comprehensive security features.
+- **Major Code Cleanup**: Removed 1,000+ lines of dead code and consolidated duplicate implementations
+- **Casino TUI Integration**: Rich terminal interface with casino styling now fully integrated
+- **Enhanced Security**: Proper authentication with SecureAuthService and database-backed sessions
+- **Improved Architecture**: Cleaner separation of concerns and preparation for Go/Charm.sh migration
 
-### Key Features
+## 🎮 Overview
 
-- **SSH Access**: Connect to the game server securely via any SSH client
-- **Terminal UI**: Beautiful terminal-based user interface using ratatui
-- **Multiplayer**: Support for up to 5 concurrent poker tables with 9 players each
-- **AI Bots**: Intelligent computer players with configurable difficulty levels
-- **Database Backend**: SQLite for persistent storage of user accounts and game statistics
-- **Security**: Comprehensive security measures including encryption, anti-cheat mechanisms, and audit logging
-- **Performance**: Optimized for low latency and high throughput
+This project implements a feature-rich, secure poker game server accessible via SSH. Players connect using any SSH client to enjoy a casino-style poker experience directly in their terminal.
 
-## Project Structure
+### 🌟 Key Features
+
+- **🔐 SSH Access**: Secure connection via any SSH client
+- **🎨 Casino TUI**: Beautiful casino-themed terminal interface using ratatui
+- **👥 Multiplayer**: Support for multiple concurrent tables and players
+- **🤖 AI Bots**: Intelligent computer players with configurable difficulty
+- **💾 Database Backend**: SQLite for persistent storage and user management
+- **🔒 Security**: Argon2 password hashing, rate limiting, and session management
+- **📊 Metrics**: Prometheus metrics endpoint for monitoring
+
+## 📁 Project Structure
 
 ```
 ssh-poker-game/
-├── crates/                   # Workspace members
-│   ├── poker-engine/         # Core game logic
-│   ├── ssh-poker-server/     # SSH poker server with Casino TUI
-│   ├── poker-tui/            # Casino-themed terminal UI
-│   ├── data-store/           # Database integration (SQLite)
-│   ├── ai-bot/               # AI bot implementation
-│   ├── hybrid-metrics/       # Prometheus/Datadog monitoring
-│   ├── russh/                # SSH library (vendored)
-│   └── russh-keys/           # SSH key handling (vendored)
-├── docs/                     # Comprehensive documentation
-├── test_ssh.sh               # Quick start script
-├── run_server.sh             # Server launch script
-├── init_db.sh                # Database initialization
-└── README.md                 # This file
+├── crates/                      # Workspace members
+│   ├── poker-engine/            # Core game logic (Elm-like architecture)
+│   ├── ssh-poker-server/        # SSH server with integrated Casino TUI
+│   │   ├── src/
+│   │   │   ├── lib.rs          # Main server entry point
+│   │   │   ├── ssh_handler.rs  # SSH session handler with TUI bridge
+│   │   │   ├── ssh_tui_bridge.rs # Bridge between SSH and poker-tui
+│   │   │   ├── secure_auth.rs  # Database-backed authentication
+│   │   │   ├── session.rs      # Session and table management
+│   │   │   └── error.rs        # Error types
+│   ├── poker-tui/               # Casino-themed terminal UI components
+│   ├── data-store/              # Database layer (SQLite via sqlx)
+│   ├── ai-bot/                  # AI opponent implementation
+│   └── hybrid-metrics/          # Prometheus/Datadog monitoring
+├── docs/                        # Comprehensive documentation
+├── test_ssh_poker.sh           # Comprehensive test suite
+├── quick_start.sh              # Quick server startup script
+├── MIGRATION_PLAN.md           # Go/Charm.sh migration roadmap
+└── README.md                   # This file
 ```
 
-## Development Plan
-
-This project follows a structured development plan with the following epics:
-
-1. **Project Setup & Foundation** (Week 1-2)
-2. **Core Game Logic** (Week 2-4)
-3. **Terminal UI Development** (Week 3-5)
-4. **SSH Server Implementation** (Week 4-6)
-5. **Multiplayer Architecture** (Week 5-7)
-6. **Database Integration** (Week 6-8)
-7. **AI Bot Development** (Week 7-9)
-8. **Security Hardening** (Week 8-10)
-9. **Testing & Quality Assurance** (Week 9-11)
-10. **Deployment & Monitoring** (Week 10-12)
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- **Rust 1.75+** and Cargo (install from [rustup.rs](https://rustup.rs/))
-- **SSH client** (OpenSSH, PuTTY, or any compatible client)
-- **Terminal** with ANSI color support and minimum size 80x24
-- **SQLite3** (automatically handled by the application)
+- **Rust 1.75+** - Install from [rustup.rs](https://rustup.rs/)
+- **SSH client** - OpenSSH, PuTTY, or any compatible client
+- **Terminal** - Minimum size 80x24 with ANSI color support
 
-### Quick Start (Recommended)
-
-1. **Clone and run:**
-   ```bash
-   git clone <your-repo-url>
-   cd ssh-poker-game
-   ./test_ssh.sh
-   ```
-
-   The script will:
-   - Build the project in release mode
-   - Create a SQLite database (poker_game.db)
-   - Start the server on port 2222 with Casino TUI
-
-2. **Connect and play:**
-   ```bash
-   ssh -p 2222 localhost
-   ```
-   
-   Use any username and password (e.g., `test`/`test123`) for testing.
-
-### Manual Installation
-
-1. **Build the project:**
-   ```bash
-   cargo build --release
-   ```
-
-2. **Start the server:**
-   ```bash
-   # Basic server
-   ./target/release/ssh-poker-server
-   
-   # Or with custom settings
-   ./target/release/ssh-poker-server \
-     --port 2222 \
-     --address 0.0.0.0 \
-     --database poker_game.db
-   ```
-
-3. **Connect to play:**
-   ```bash
-   ssh -p 2222 localhost
-   # Use any username/password for testing (e.g., test/test123)
-   ```
-
-### Creating Additional Users
-
-To create more users, you can:
-
-1. **Use the built-in registration** (when connecting via SSH)
-2. **Add users via the database** (SQLite tools)
-3. **Extend the server** with user management commands
-
-### Server Options
+### 🎯 Quick Start (Recommended)
 
 ```bash
-./target/release/ssh-poker-server --help
+# Clone the repository
+git clone <your-repo-url>
+cd ssh-poker-game
+
+# Run the quick start script
+./quick_start.sh
 ```
 
-- `--port` or `-p` - Server port (default: 2222)
-- `--address` or `-a` - Bind address (default: 0.0.0.0)
-- `--database` or `-d` - Database file path (default: poker_game.db)
-- `--help` or `-h` - Show help message
-## Acknowledgments
+This will:
+- Build the project in release mode
+- Create a SQLite database
+- Create a demo user (demo/demo123)
+- Start the server on port 2222
 
-- [russh](https://github.com/Eugeny/russh) - Rust SSH client & server library
-- [ratatui](https://ratatui.rs) - Terminal UI library for Rust
-- [tokio](https://tokio.rs) - Asynchronous runtime for Rust
-- [rs-poker](https://github.com/elliottneilclark/rs-poker) - Poker evaluation library
+### 🔌 Connecting to the Server
 
-## Project Status
+```bash
+# Connect as demo user (password: demo123)
+ssh -p 2222 demo@localhost
 
-This project is currently in development. See the [Project Board](https://github.com/users/JShand18/projects/2) for current progress.
+# Connect as anonymous guest
+ssh -p 2222 guest@localhost
+```
 
-## Documentation
+### 🛠️ Manual Setup
 
-The project includes comprehensive documentation:
+#### Build the Project
 
-- [Executive Summary](docs/executive_summary.md) - High-level project overview
-- [Requirements](docs/requirements.md) - Detailed feature requirements
-- [Specifications](docs/specifications.md) - Technical specifications
-- [Project Details](docs/project_details.md) - Full project plan with resource allocation
-- [Implementation Strategy](docs/implementation_strategy.md) - Detailed implementation guide
-- [Tasks](docs/tasks.md) - Development task breakdown
-- [Design Improvements](docs/design_improvements.md) - Architectural improvement proposals
-- [Cargo Configuration](docs/cargo_configuration.md) - Build and dependency management
-- [Architecture Diagrams](docs/architecture_diagrams.md) - Visual system architecture with Mermaid diagrams
-- [Architecture ASCII](docs/architecture_ascii.md) - ASCII-art architecture diagrams
-- [Current State Summary](docs/current_state_summary.md) - Current implementation status
+```bash
+# Debug build (faster compilation, slower runtime)
+cargo build --bin ssh-poker-server
 
-### 📚 Learning Resources
+# Release build (optimized for production)
+cargo build --release --bin ssh-poker-server
+```
 
-- [Book Mappings](docs/book_mappings/README.md) - Comprehensive mappings between foundational programming books and this codebase:
-  - **The Rust Programming Language** - Chapter-by-chapter code mappings
-  - **Design Patterns (Gang of Four)** - Pattern implementations and opportunities
-  - **Rust for Embedded Systems** - Systems programming concepts in practice
+#### Run the Server
 
-# Command Reference
-🎮 SSH Poker Game - Complete Command Reference
+```bash
+# Basic server startup
+cargo run --bin ssh-poker-server
 
-  🚀 Quick Start Scripts
+# With custom options
+cargo run --bin ssh-poker-server -- \
+  --port 2222 \
+  --address 0.0.0.0 \
+  --database poker_game.db \
+  --create-demo-user
+```
 
-  Primary Scripts
+#### Server Options
 
-  # Start SSH server with Casino TUI (recommended)
-  ./test_ssh.sh
-  # Runs on port 2222 with the new casino-themed interface
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--port` | `-p` | 2222 | SSH server port |
+| `--address` | `-a` | 0.0.0.0 | Bind address |
+| `--database` | `-d` | poker_game.db | SQLite database path |
+| `--create-demo-user` | | false | Create demo user on startup |
+| `--verbose` | `-v` | false | Enable debug logging |
 
-  # Start SSH server with automatic setup
-  ./run_server.sh
-  # Builds release version, creates database, adds demo user
+## 🧪 Testing
 
-  # Run simple poker CLI demo
-  ./run_simple.sh
-  # Builds and runs just the poker engine CLI
+### Run the Test Suite
 
-  📦 Cargo Commands
+```bash
+# Run comprehensive test suite
+./test_ssh_poker.sh
 
-  Running Binaries
+# Interactive test mode
+./test_ssh_poker.sh interactive
 
-  # Run SSH server with Casino TUI
-  cargo run --bin ssh-poker-server
+# Clean up test artifacts
+./test_ssh_poker.sh clean
+```
 
-  # Run SSH server with arguments
-  cargo run --bin ssh-poker-server -- --address 0.0.0.0 --port 2222
+### Run Unit Tests
 
-  # Run poker CLI demo
-  cargo run --bin poker-cli
+```bash
+# All tests
+cargo test --workspace
 
-  Building
+# Specific crate
+cargo test -p poker-engine
+cargo test -p ssh-poker-server
 
-  # Build everything in debug mode
-  cargo build
+# With output
+cargo test -- --nocapture
+```
 
-  # Build everything in release mode (optimized)
-  cargo build --release
+## 🎮 Gameplay
 
-  # Build specific crate
-  cargo build -p poker-engine
-  cargo build -p ssh-poker-server
-  cargo build -p poker-tui
-  cargo build -p data-store
-  cargo build -p hybrid-metrics
-  cargo build -p ai-bot
+### In-Game Controls
 
-  Testing
+Once connected via SSH:
 
-  # Run all tests
-  cargo test
+#### Navigation
+- **Arrow Keys** or **W/A/S/D** - Navigate menus
+- **Enter** - Select/Confirm
+- **Esc** - Go back
+- **Q** - Quit to main menu
 
-  # Run tests for specific crate
-  cargo test -p poker-engine
-  cargo test -p ssh-poker-server
+#### Poker Actions
+- **F** - Fold
+- **C** - Call/Check
+- **R** - Raise
+- **A** - All-in
 
-  # Run tests with output
-  cargo test -- --nocapture
+#### Lobby
+- **1-9** - Join table by number
+- **N** - Create new table
 
-  # Run specific test
-  cargo test test_name
+## 🔧 Development
 
-  Code Quality
+### Building Components
 
-  # Check for compilation errors without building
-  cargo check
+```bash
+# Build everything
+cargo build --workspace
 
-  # Check all workspace members
-  cargo check --workspace
+# Build specific crate
+cargo build -p poker-engine
+cargo build -p poker-tui
+cargo build -p ssh-poker-server
+```
 
-  # Format code
-  cargo fmt
+### Code Quality
 
-  # Format and check
-  cargo fmt -- --check
+```bash
+# Format code
+cargo fmt
 
-  # Run clippy linter
-  cargo clippy
+# Run clippy linter
+cargo clippy --workspace --all-features
 
-  # Run clippy on everything
-  cargo clippy --workspace --all-features --all-targets
+# Check for compilation errors
+cargo check --workspace
 
-  # Fix auto-fixable issues
-  cargo fix
+# Security audit
+cargo audit
+```
 
-  # Clean build artifacts
-  cargo clean
+### Monitoring
 
-  Documentation
+When the server is running, metrics are available at:
 
-  # Build and open documentation
-  cargo doc --open
+```bash
+# Prometheus metrics
+curl http://localhost:9090/metrics
 
-  # Build docs for all dependencies
-  cargo doc --no-deps
+# Health check
+curl http://localhost:9090/health
+```
 
-  # Build and open docs for specific crate
-  cargo doc -p poker-engine --open
+### Environment Variables
 
-  🔧 Development Commands
+```bash
+# Set log level
+RUST_LOG=debug cargo run --bin ssh-poker-server
 
-  Database Operations
+# Enable backtrace for debugging
+RUST_BACKTRACE=1 cargo run --bin ssh-poker-server
+```
 
-  # Connect to PostgreSQL (if using PostgreSQL backend)
-  psql -U postgres -d poker_game
+## 📚 Documentation
 
-  # Connect to SQLite (if using SQLite)
-  sqlite3 poker_game.db
+Comprehensive documentation is available in the `docs/` directory:
 
-  Monitoring & Metrics
+- [Executive Summary](docs/executive_summary.md) - High-level overview
+- [Current State](docs/current_state_summary.md) - Implementation status
+- [Architecture](docs/simplified_architecture.md) - System architecture
+- [Migration Plan](MIGRATION_PLAN.md) - Go/Charm.sh migration roadmap
 
-  # Prometheus metrics are exposed on port 9090 when server runs
-  curl http://localhost:9090/metrics
+### Learning Resources
 
-  # Check server health
-  curl http://localhost:9090/health
+- [Book Mappings](docs/book_mappings/README.md) - Code examples mapped to programming books
+- [Gameplay Guide](GAMEPLAY.md) - Detailed poker rules and gameplay
 
-  🎯 SSH Connection Commands
+## 🏗️ Architecture Highlights
 
-  Connecting to the Server
+### Clean Architecture
+- **Elm-like game engine** - Functional, immutable game state management
+- **Casino TUI** - Rich terminal interface with themes and animations
+- **SSH Bridge** - Seamless integration between SSH and TUI events
 
-  # Basic connection (default port 2222)
-  ssh -p 2222 localhost
+### Security Features
+- **Argon2** password hashing
+- **Rate limiting** on authentication attempts
+- **Session management** with automatic cleanup
+- **Database-backed** user authentication
 
-  # With username
-  ssh -p 2222 test@localhost
+### Recent Improvements (November 2024)
+- Removed 1,020+ lines of dead code
+- Consolidated 3 authentication systems into 1
+- Integrated casino-themed TUI via ssh_tui_bridge
+- Fixed authentication to use SecureAuthService properly
+- Created comprehensive test infrastructure
 
-  # With verbose output (debugging)
-  ssh -vvv -p 2222 localhost
+## 🚦 Troubleshooting
 
-  # Specify different host
-  ssh -p 2222 user@your-server.com
+### Port Already in Use
+```bash
+# Check what's using port 2222
+lsof -i :2222
 
-  🎮 In-Game Commands (Once Connected)
+# Kill process on port
+kill $(lsof -t -i:2222)
+```
 
-  Navigation
+### Connection Issues
+```bash
+# Test with verbose SSH output
+ssh -vvv -p 2222 localhost
 
-  - 1 or F1 - Toggle between Lobby and Game
-  - W/A/S/D or Arrow Keys - Navigate
-  - Enter - Select/Confirm
-  - Esc - Go back
-  - q - Quit/Disconnect
+# Check server logs
+RUST_LOG=debug ./quick_start.sh
+```
 
-  Game Actions
+### Database Issues
+```bash
+# Connect to SQLite database
+sqlite3 poker_game.db
 
-  - n - Create new table (in lobby)
-  - 1-9 - Join table by number
-  - f - Fold
-  - c - Call/Check
-  - r - Raise
-  - a - All-in
+# Show tables
+.tables
 
-  🛠️ Advanced Commands
+# Check users
+SELECT * FROM users;
+```
 
-  Running with Custom Configuration
+## 🤝 Contributing
 
-  # Set environment variables
-  RUST_LOG=debug cargo run --bin ssh-poker-server
-  RUST_BACKTRACE=1 cargo run --bin ssh-poker-server
+Contributions are welcome! Please ensure:
+1. Code passes `cargo fmt` and `cargo clippy`
+2. Tests pass with `cargo test`
+3. Documentation is updated for new features
 
-  # With custom database
-  DATABASE_URL=postgres://user:pass@localhost/poker cargo run --bin ssh-poker-server
+## 📜 License
 
-  # Enable Datadog metrics (if configured)
-  DATADOG_ENABLED=true cargo run --bin ssh-poker-server
+MIT License - See LICENSE file for details
 
-  Benchmarking
+## 🙏 Acknowledgments
 
-  # Run benchmarks
-  cargo bench
+- [russh](https://github.com/warp-tech/russh) - Rust SSH library
+- [ratatui](https://ratatui.rs) - Terminal UI framework
+- [tokio](https://tokio.rs) - Async runtime
+- [sqlx](https://github.com/launchbadge/sqlx) - Async SQL toolkit
 
-  # Run specific benchmark
-  cargo bench bench_name
+## 📊 Project Status
 
-  Dependency Management
+**Current Phase**: Code cleanup complete, TUI integrated, preparing for state consolidation
 
-  # Update dependencies
-  cargo update
+**Next Steps**:
+- Phase 4: Consolidate game state management
+- Phase 5: Prepare for Go/Charm.sh migration
 
-  # Add a new dependency
-  cargo add tokio
-
-  # Check for outdated dependencies
-  cargo outdated
-
-  # Audit for security vulnerabilities
-  cargo audit
-
-  📊 Workspace Information
-
-  Available Crates
-
-  - poker-engine - Core game logic
-  - ssh-poker-server - SSH server with Casino TUI
-  - poker-tui - Casino-themed terminal UI
-  - data-store - Database integration
-  - hybrid-metrics - Prometheus/Datadog monitoring
-  - ai-bot - AI player implementation
-
-  List All Workspace Members
-
-  cargo metadata --no-deps --format-version 1 | jq -r '.workspace_members[]'
-
-  🔍 Troubleshooting Commands
-
-  # Check if port is in use
-  lsof -i :2222
-
-  # Kill process on port
-  kill $(lsof -t -i:2222)
-
-  # Check SSH server logs
-  RUST_LOG=debug ./test_ssh.sh
-
-  # Test database connection
-  cargo run --bin ssh-poker-server -- --test-db-connection
-
-  📝 Git Commands (for version control)
-
-  # Check status
-  git status
-
-  # Stage changes
-  git add .
-
-  # Commit with message
-  git commit -m "Update message"
-
-  # Push to remote
-  git push origin main
-
-  This comprehensive list covers all the major commands for developing, testing, running, and maintaining the SSH Poker Game application. The most common workflow is to use ./test_ssh.sh to start the
-  server and then connect with ssh -p 2222 localhost.
+See the [Migration Plan](MIGRATION_PLAN.md) for the roadmap to Go with Charm.sh.

@@ -453,8 +453,7 @@ impl PokerTableRenderer {
     pub fn render_lobby(&self, frame: &mut Frame, area: Rect, tables: &[(uuid::Uuid, String, usize, usize)]) {
         frame.render_widget(Clear, area);
 
-        let lobby_art = vec![
-            "╔══════════════════════════════════════════════════════════════════════════════╗",
+        let lobby_art = ["╔══════════════════════════════════════════════════════════════════════════════╗",
             "║                                                                              ║",
             "║    ♠♥♦♣  WELCOME TO THE SSH POKER LOBBY  ♣♦♥♠                                ║",
             "║                                                                              ║",
@@ -462,8 +461,7 @@ impl PokerTableRenderer {
             "║      │                    AVAILABLE TABLES                         │        ║",
             "║      └─────────────────────────────────────────────────────────────┘        ║",
             "║                                                                              ║",
-            "╚══════════════════════════════════════════════════════════════════════════════╝",
-        ];
+            "╚══════════════════════════════════════════════════════════════════════════════╝"];
 
         let mut lobby_lines: Vec<Line> = lobby_art.iter()
             .map(|line| Line::from(Span::styled(*line, Style::default().fg(Color::Green))))

@@ -158,7 +158,7 @@ impl PokerMetrics {
                 format!("players:{}", player_count),
             ];
             let _ = client.incr("poker.game.started", &tags);
-            let _ = client.gauge("poker.game.player_count", &player_count.to_string(), &tags);
+            let _ = client.gauge("poker.game.player_count", player_count.to_string(), &tags);
         }
         
         info!("Game started: {} with {} players", game_id, player_count);
@@ -173,7 +173,7 @@ impl PokerMetrics {
                 format!("winner:{}", winner_id),
             ];
             let _ = client.incr("poker.game.completed", &tags);
-            let _ = client.histogram("poker.game.duration", &duration_seconds.to_string(), &tags);
+            let _ = client.histogram("poker.game.duration", duration_seconds.to_string(), &tags);
         }
         
         info!("Game completed: {} in {}s, winner: {}", game_id, duration_seconds, winner_id);
@@ -186,8 +186,8 @@ impl PokerMetrics {
         
         if let Some(ref client) = self.datadog_client {
             let tags = vec![format!("env:{}", self.config.environment)];
-            let _ = client.gauge("poker.active.games", &games.to_string(), &tags);
-            let _ = client.gauge("poker.active.players", &players.to_string(), &tags);
+            let _ = client.gauge("poker.active.games", games.to_string(), &tags);
+            let _ = client.gauge("poker.active.players", players.to_string(), &tags);
         }
     }
     
@@ -201,7 +201,7 @@ impl PokerMetrics {
                 format!("env:{}", self.config.environment),
                 format!("endpoint:{}", endpoint),
             ];
-            let _ = client.histogram("poker.response.duration", &duration.as_millis().to_string(), &tags);
+            let _ = client.histogram("poker.response.duration", duration.as_millis().to_string(), &tags);
         }
     }
     
@@ -215,7 +215,7 @@ impl PokerMetrics {
                 format!("query_type:{}", query_type),
                 format!("success:{}", success),
             ];
-            let _ = client.histogram("poker.database.query.duration", &duration.as_millis().to_string(), &tags);
+            let _ = client.histogram("poker.database.query.duration", duration.as_millis().to_string(), &tags);
             
             if !success {
                 let _ = client.incr("poker.database.errors", &tags);
@@ -230,8 +230,8 @@ impl PokerMetrics {
         
         if let Some(ref client) = self.datadog_client {
             let tags = vec![format!("env:{}", self.config.environment)];
-            let _ = client.gauge("poker.system.memory_bytes", &memory_bytes.to_string(), &tags);
-            let _ = client.gauge("poker.system.cpu_percent", &cpu_percent.to_string(), &tags);
+            let _ = client.gauge("poker.system.memory_bytes", memory_bytes.to_string(), &tags);
+            let _ = client.gauge("poker.system.cpu_percent", cpu_percent.to_string(), &tags);
         }
     }
     
@@ -254,7 +254,7 @@ impl PokerMetrics {
             
             if let Some(amt) = amount {
                 tags.push(format!("amount_bucket:{}", self.amount_bucket(amt)));
-                let _ = client.histogram("poker.action.amount", &amt.to_string(), &tags);
+                let _ = client.histogram("poker.action.amount", amt.to_string(), &tags);
             }
             
             let _ = client.incr("poker.action", &tags);

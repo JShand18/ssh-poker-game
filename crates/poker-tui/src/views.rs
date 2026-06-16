@@ -44,6 +44,12 @@ pub struct LobbyView {
     status_message: String,
 }
 
+impl Default for LobbyView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LobbyView {
     pub fn new() -> Self {
         Self {
@@ -189,6 +195,12 @@ pub struct GameView {
     _current_player: usize,
     action_buttons: ActionButtons,
     player_hand: Vec<Card>,
+}
+
+impl Default for GameView {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl GameView {
@@ -571,6 +583,12 @@ pub struct AuthView {
     _processing: bool,
 }
 
+impl Default for AuthView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AuthView {
     pub fn new() -> Self {
         Self {
@@ -774,126 +792,117 @@ impl View for AuthView {
     fn handle_input(&mut self, input: &InputEvent, _current_state: &AppState) -> Option<AppState> {
         match self.auth_mode {
             0 => { // Welcome screen
-                match input {
-                    InputEvent::Key(key) => {
-                        match key.code {
-                            KeyCode::Char('g') | KeyCode::Char('G') => {
-                                // Play as guest - go directly to lobby
-                                return Some(AppState::Lobby);
-                            }
-                            KeyCode::Char('l') | KeyCode::Char('L') => {
-                                // Switch to login
-                                self.auth_mode = 1;
-                                self.focused_field = 0;
-                                self.status_message.clear();
-                            }
-                            KeyCode::Char('r') | KeyCode::Char('R') => {
-                                // Switch to register
-                                self.auth_mode = 2;
-                                self.focused_field = 0;
-                                self.status_message.clear();
-                            }
-                            KeyCode::Char('q') | KeyCode::Char('Q') => {
-                                // Quit application
-                                return Some(AppState::Error("User quit".to_string()));
-                            }
-                            _ => {}
+                if let InputEvent::Key(key) = input {
+                    match key.code {
+                        KeyCode::Char('g') | KeyCode::Char('G') => {
+                            // Play as guest - go directly to lobby
+                            return Some(AppState::Lobby);
                         }
+                        KeyCode::Char('l') | KeyCode::Char('L') => {
+                            // Switch to login
+                            self.auth_mode = 1;
+                            self.focused_field = 0;
+                            self.status_message.clear();
+                        }
+                        KeyCode::Char('r') | KeyCode::Char('R') => {
+                            // Switch to register
+                            self.auth_mode = 2;
+                            self.focused_field = 0;
+                            self.status_message.clear();
+                        }
+                        KeyCode::Char('q') | KeyCode::Char('Q') => {
+                            // Quit application
+                            return Some(AppState::Error("User quit".to_string()));
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
             1 => { // Login screen
-                match input {
-                    InputEvent::Key(key) => {
-                        match key.code {
-                            KeyCode::Tab => {
-                                // Tab to next field
-                                self.focused_field = (self.focused_field + 1) % 2;
-                            }
-                            KeyCode::Esc => { // Escape
-                                // Back to welcome
-                                self.auth_mode = 0;
-                                self.username.clear();
-                                self.password.clear();
-                                self.status_message.clear();
-                            }
-                            KeyCode::Enter => { // Enter
-                                // Attempt login
-                                if self.username.is_empty() || self.password.is_empty() {
-                                    self.status_message = "Please fill in all fields".to_string();
-                                } else {
-                                    // TODO: Implement actual login logic
-                                    self.status_message = "Login successful!".to_string();
-                                    return Some(AppState::Lobby);
-                                }
-                            }
-                            KeyCode::Backspace => { // Backspace
-                                match self.focused_field {
-                                    0 => { self.username.pop(); }
-                                    1 => { self.password.pop(); }
-                                    _ => {}
-                                }
-                            }
-                            KeyCode::Char(c) => {
-                                match self.focused_field {
-                                    0 => { self.username.push(c); }
-                                    1 => { self.password.push(c); }
-                                    _ => {}
-                                }
-                            }
-                            _ => {}
+                if let InputEvent::Key(key) = input {
+                    match key.code {
+                        KeyCode::Tab => {
+                            // Tab to next field
+                            self.focused_field = (self.focused_field + 1) % 2;
                         }
+                        KeyCode::Esc => { // Escape
+                            // Back to welcome
+                            self.auth_mode = 0;
+                            self.username.clear();
+                            self.password.clear();
+                            self.status_message.clear();
+                        }
+                        KeyCode::Enter => { // Enter
+                            // Attempt login
+                            if self.username.is_empty() || self.password.is_empty() {
+                                self.status_message = "Please fill in all fields".to_string();
+                            } else {
+                                // TODO: Implement actual login logic
+                                self.status_message = "Login successful!".to_string();
+                                return Some(AppState::Lobby);
+                            }
+                        }
+                        KeyCode::Backspace => { // Backspace
+                            match self.focused_field {
+                                0 => { self.username.pop(); }
+                                1 => { self.password.pop(); }
+                                _ => {}
+                            }
+                        }
+                        KeyCode::Char(c) => {
+                            match self.focused_field {
+                                0 => { self.username.push(c); }
+                                1 => { self.password.push(c); }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
             2 => { // Register screen
-                match input {
-                    InputEvent::Key(key) => {
-                        match key.code {
-                            KeyCode::Tab => {
-                                // Tab to next field
-                                self.focused_field = (self.focused_field + 1) % 3;
-                            }
-                            KeyCode::Esc => { // Escape
-                                // Back to welcome
-                                self.auth_mode = 0;
-                                self.username.clear();
-                                self.password.clear();
-                                self.email.clear();
-                                self.status_message.clear();
-                            }
-                            KeyCode::Enter => { // Enter
-                                // Attempt registration
-                                if self.username.is_empty() || self.password.is_empty() {
-                                    self.status_message = "Please fill in username and password".to_string();
-                                } else {
-                                    // TODO: Implement actual registration logic
-                                    self.status_message = "Registration successful!".to_string();
-                                    return Some(AppState::Lobby);
-                                }
-                            }
-                            KeyCode::Backspace => { // Backspace
-                                match self.focused_field {
-                                    0 => { self.username.pop(); }
-                                    1 => { self.password.pop(); }
-                                    2 => { self.email.pop(); }
-                                    _ => {}
-                                }
-                            }
-                            KeyCode::Char(c) => {
-                                match self.focused_field {
-                                    0 => { self.username.push(c); }
-                                    1 => { self.password.push(c); }
-                                    2 => { self.email.push(c); }
-                                    _ => {}
-                                }
-                            }
-                            _ => {}
+                if let InputEvent::Key(key) = input {
+                    match key.code {
+                        KeyCode::Tab => {
+                            // Tab to next field
+                            self.focused_field = (self.focused_field + 1) % 3;
                         }
+                        KeyCode::Esc => { // Escape
+                            // Back to welcome
+                            self.auth_mode = 0;
+                            self.username.clear();
+                            self.password.clear();
+                            self.email.clear();
+                            self.status_message.clear();
+                        }
+                        KeyCode::Enter => { // Enter
+                            // Attempt registration
+                            if self.username.is_empty() || self.password.is_empty() {
+                                self.status_message = "Please fill in username and password".to_string();
+                            } else {
+                                // TODO: Implement actual registration logic
+                                self.status_message = "Registration successful!".to_string();
+                                return Some(AppState::Lobby);
+                            }
+                        }
+                        KeyCode::Backspace => { // Backspace
+                            match self.focused_field {
+                                0 => { self.username.pop(); }
+                                1 => { self.password.pop(); }
+                                2 => { self.email.pop(); }
+                                _ => {}
+                            }
+                        }
+                        KeyCode::Char(c) => {
+                            match self.focused_field {
+                                0 => { self.username.push(c); }
+                                1 => { self.password.push(c); }
+                                2 => { self.email.push(c); }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
             _ => {}

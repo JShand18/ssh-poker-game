@@ -9,4 +9,13 @@ Cargo.lock
 **/*.rs.bk
 
 # MSVC Windows builds produce these
-*.pdb 
+*.pdb
+
+# SQLite databases (runtime/test artifacts, should not be committed)
+*.db
+*.db-shm
+*.db-wal
+*.db.backup
+
+# Log files
+*.log 

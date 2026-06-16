@@ -176,7 +176,7 @@ impl BettingHistory {
     }
 
     pub fn add_action(&mut self, player_id: usize, action: Action) {
-        self.actions.push((player_id, action.clone()));
+        self.actions.push((player_id, action));
         self.round_actions.entry(player_id).or_default().push(action);
     }
 
@@ -398,9 +398,8 @@ mod tests {
             Card { rank: Rank::Two, suit: Suit::Clubs },
         ];
 
+        // Four hearts to a flush is a classic drawing hand (9 outs).
         let is_drawing = evaluator.is_drawing_hand(&hole_cards, &community_cards);
-        // This might be true or false depending on the exact implementation
-        // The test just ensures the method doesn't panic
-        assert!(is_drawing || !is_drawing);
+        assert!(is_drawing);
     }
 }

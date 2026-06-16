@@ -2,11 +2,13 @@ use serde::{Serialize, Deserialize};
 use rand::{Rng, thread_rng};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum BotPersonality {
     Tight,         // Plays few hands, but plays them aggressively
     Loose,         // Plays many hands, calls frequently
     Aggressive,    // Bets and raises often, bluffs more
     Conservative,  // Avoids risks, plays safely
+    #[default]
     Balanced,      // Mix of all styles, adapts to situation
 }
 
@@ -144,11 +146,6 @@ impl BotPersonality {
     }
 }
 
-impl Default for BotPersonality {
-    fn default() -> Self {
-        BotPersonality::Balanced
-    }
-}
 
 impl PersonalityTraits {
     pub fn should_play_hand(&self, hand_strength: f64) -> bool {
@@ -435,8 +432,8 @@ mod tests {
         assert!(tight_late_threshold <= tight_early_threshold);
         
         // All thresholds should be in valid range
-        assert!(tight_early_threshold >= 0.2 && tight_early_threshold <= 0.8);
-        assert!(tight_late_threshold >= 0.2 && tight_late_threshold <= 0.8);
-        assert!(loose_early_threshold >= 0.2 && loose_early_threshold <= 0.8);
+        assert!((0.2..=0.8).contains(&tight_early_threshold));
+        assert!((0.2..=0.8).contains(&tight_late_threshold));
+        assert!((0.2..=0.8).contains(&loose_early_threshold));
     }
 }

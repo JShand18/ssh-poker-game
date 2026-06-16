@@ -30,6 +30,12 @@ pub struct BettingRound {
     pub total_pot: u64,
 }
 
+impl Default for BettingRound {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BettingRound {
     pub fn new() -> Self {
         Self {
@@ -74,14 +80,14 @@ impl BettingValidator {
         player: &Player,
         round: &BettingRound,
     ) -> Result<()> {
+        // A player who has folded, is all-in, or is sitting out cannot take any
+        // betting action.
+        if !player.can_act() {
+            return Err(PokerError::InvalidAction("Player cannot act".to_string()));
+        }
+
         match action {
-            Action::Fold => {
-                // Always allowed if player can act
-                if !player.can_act() {
-                    return Err(PokerError::InvalidAction("Player cannot act".to_string()));
-                }
-                Ok(())
-            }
+            Action::Fold => Ok(()),
             
             Action::Check => {
                 // Only allowed if no bet to call
@@ -261,6 +267,12 @@ pub struct PotManager {
     pub side_pots: Vec<SidePot>,
 }
 
+impl Default for PotManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PotManager {
     pub fn new() -> Self {
         Self {
@@ -311,10 +323,8 @@ impl PotManager {
                     pot_amount += contribution;
                     
                     // Only non-folded players are eligible to win
-                    if player.status != PlayerStatus::Folded && player.status != PlayerStatus::SittingOut {
-                        if player_total_bet >= all_in_amount {
-                            eligible_players.push(player.id);
-                        }
+                    if player.status != PlayerStatus::Folded && player.status != PlayerStatus::SittingOut && player_total_bet >= all_in_amount {
+                        eligible_players.push(player.id);
                     }
                 }
             }
@@ -350,7 +360,7 @@ impl PotManager {
         // If there's only a main pot (no all-ins), calculate total from all players
         if self.side_pots.is_empty() && self.main_pot == 0 {
             self.main_pot = players.iter()
-                .map(|p| get_player_total_bet(p))
+                .map(get_player_total_bet)
                 .sum();
         }
     }
@@ -527,11 +537,11 @@ mod tests {
         
         // Test player who hasn't bet
         round.player_bets.insert(0, 100);
+        round.current_bet = 100;
         assert_eq!(round.amount_to_call(1), 100);
         
         // Test player who has partially bet
         round.player_bets.insert(1, 50);
-        round.current_bet = 100;
         assert_eq!(round.amount_to_call(1), 50);
     }
     

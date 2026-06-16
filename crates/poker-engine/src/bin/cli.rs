@@ -50,8 +50,8 @@ fn main() {
                 let input = input.trim();
                 
                 // Check if it's a custom bet command
-                if input.starts_with("bet ") {
-                    if let Ok(amount) = input[4..].parse::<u64>() {
+                if let Some(bet_arg) = input.strip_prefix("bet ") {
+                    if let Ok(amount) = bet_arg.parse::<u64>() {
                         // Check if bet is a valid action
                         if valid_actions.iter().any(|a| matches!(a, Action::Bet(_))) {
                             let action = Action::Bet(amount);
@@ -65,8 +65,8 @@ fn main() {
                     } else {
                         println!("Invalid bet amount!");
                     }
-                } else if input.starts_with("raise ") {
-                    if let Ok(amount) = input[6..].parse::<u64>() {
+                } else if let Some(raise_arg) = input.strip_prefix("raise ") {
+                    if let Ok(amount) = raise_arg.parse::<u64>() {
                         // Check if raise is a valid action
                         if valid_actions.iter().any(|a| matches!(a, Action::Raise(_))) {
                             let action = Action::Raise(amount);
@@ -82,7 +82,7 @@ fn main() {
                     }
                 } else if let Ok(choice) = input.parse::<usize>() {
                     if choice > 0 && choice <= valid_actions.len() {
-                        let action = valid_actions[choice - 1].clone();
+                        let action = valid_actions[choice - 1];
                         match game.process_action(action) {
                             Ok(_) => {},
                             Err(e) => println!("Error: {:?}", e),
@@ -195,7 +195,7 @@ fn format_action(action: &Action) -> String {
         Action::Fold => "Fold".to_string(),
         Action::Check => "Check".to_string(),
         Action::Call => {
-            format!("Call")
+            "Call".to_string()
         },
         Action::Bet(amount) => format!("Bet ${}", amount),
         Action::Raise(amount) => format!("Raise ${}", amount),
@@ -204,7 +204,7 @@ fn format_action(action: &Action) -> String {
 }
 
 fn show_hands(game: &GameState) {
-    for (_i, player) in game.players.iter().enumerate() {
+    for player in game.players.iter() {
         if player.is_active() {
             if let Some(hole_cards) = &player.hole_cards {
                 print!("{}'s cards: ", player.name);

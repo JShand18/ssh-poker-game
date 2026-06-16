@@ -486,7 +486,9 @@ mod tests {
         let config = DatabaseConfig {
             database_path: ":memory:".to_string(),  // Use in-memory database for tests
             create_if_missing: true,
-            max_connections: 5,
+            // In-memory SQLite is per-connection; keep the pool to a single
+            // connection so migrations and inserts are visible to later queries.
+            max_connections: 1,
         };
 
         Database::new(config).await.unwrap()

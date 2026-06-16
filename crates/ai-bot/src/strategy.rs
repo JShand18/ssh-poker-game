@@ -32,6 +32,12 @@ pub struct TightStrategy {
     name: &'static str,
 }
 
+impl Default for TightStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TightStrategy {
     pub fn new() -> Self {
         Self {
@@ -69,7 +75,7 @@ impl PokerStrategy for TightStrategy {
         } else if context.valid_actions.contains(&Action::Check) {
             Ok(Action::Check)
         } else {
-            Ok(context.valid_actions[0].clone())
+            Ok(context.valid_actions[0])
         }
     }
 
@@ -80,6 +86,12 @@ impl PokerStrategy for TightStrategy {
 
 pub struct LooseStrategy {
     name: &'static str,
+}
+
+impl Default for LooseStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LooseStrategy {
@@ -118,7 +130,7 @@ impl PokerStrategy for LooseStrategy {
         } else if context.valid_actions.contains(&Action::Check) {
             Ok(Action::Check)
         } else {
-            Ok(context.valid_actions[0].clone())
+            Ok(context.valid_actions[0])
         }
     }
 
@@ -129,6 +141,12 @@ impl PokerStrategy for LooseStrategy {
 
 pub struct AggressiveStrategy {
     name: &'static str,
+}
+
+impl Default for AggressiveStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AggressiveStrategy {
@@ -169,7 +187,7 @@ impl PokerStrategy for AggressiveStrategy {
         } else if context.valid_actions.contains(&Action::Check) {
             Ok(Action::Check)
         } else {
-            Ok(context.valid_actions[0].clone())
+            Ok(context.valid_actions[0])
         }
     }
 
@@ -180,6 +198,12 @@ impl PokerStrategy for AggressiveStrategy {
 
 pub struct ConservativeStrategy {
     name: &'static str,
+}
+
+impl Default for ConservativeStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ConservativeStrategy {
@@ -239,6 +263,12 @@ pub struct BalancedStrategy {
     name: &'static str,
 }
 
+impl Default for BalancedStrategy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BalancedStrategy {
     pub fn new() -> Self {
         Self {
@@ -259,7 +289,7 @@ impl PokerStrategy for BalancedStrategy {
             Position::Late => 0.1,     // Play looser in late position
         };
 
-        let adjusted_hand_strength = (context.hand_strength + position_modifier).max(0.0).min(1.0);
+        let adjusted_hand_strength = (context.hand_strength + position_modifier).clamp(0.0, 1.0);
 
         // Phase-based strategy
         match context.game_phase {
@@ -272,7 +302,7 @@ impl PokerStrategy for BalancedStrategy {
                 if context.valid_actions.contains(&Action::Check) {
                     Ok(Action::Check)
                 } else {
-                    Ok(context.valid_actions[0].clone())
+                    Ok(context.valid_actions[0])
                 }
             }
         }
@@ -311,7 +341,7 @@ impl BalancedStrategy {
         } else if context.valid_actions.contains(&Action::Check) {
             Ok(Action::Check)
         } else {
-            Ok(context.valid_actions[0].clone())
+            Ok(context.valid_actions[0])
         }
     }
 
@@ -338,11 +368,9 @@ impl BalancedStrategy {
         }
 
         // Bluff if we should and have weak hands
-        if hand_strength < 0.4 && context.should_bluff {
-            if context.valid_actions.contains(&Action::Bet(50)) {
-                let bluff_amount = (context.pot_size / 2).max(25).min(context.player_chips / 10);
-                return Ok(Action::Bet(bluff_amount));
-            }
+        if hand_strength < 0.4 && context.should_bluff && context.valid_actions.contains(&Action::Bet(50)) {
+            let bluff_amount = (context.pot_size / 2).max(25).min(context.player_chips / 10);
+            return Ok(Action::Bet(bluff_amount));
         }
 
         // Default to call or check
@@ -351,23 +379,19 @@ impl BalancedStrategy {
         } else if context.valid_actions.contains(&Action::Check) {
             Ok(Action::Check)
         } else {
-            Ok(context.valid_actions[0].clone())
+            Ok(context.valid_actions[0])
         }
     }
 
     fn turn_strategy(&self, context: &DecisionContext, hand_strength: f64) -> Result<Action> {
         // Similar to flop but more cautious
-        if hand_strength > 0.7 {
-            if context.valid_actions.contains(&Action::Bet(50)) {
-                let bet_amount = (context.pot_size / 2).max(50).min(context.player_chips / 4);
-                return Ok(Action::Bet(bet_amount));
-            }
+        if hand_strength > 0.7 && context.valid_actions.contains(&Action::Bet(50)) {
+            let bet_amount = (context.pot_size / 2).max(50).min(context.player_chips / 4);
+            return Ok(Action::Bet(bet_amount));
         }
 
-        if hand_strength < 0.35 && context.current_bet > context.pot_size / 4 {
-            if context.valid_actions.contains(&Action::Fold) {
-                return Ok(Action::Fold);
-            }
+        if hand_strength < 0.35 && context.current_bet > context.pot_size / 4 && context.valid_actions.contains(&Action::Fold) {
+            return Ok(Action::Fold);
         }
 
         if context.valid_actions.contains(&Action::Call) {
@@ -375,7 +399,7 @@ impl BalancedStrategy {
         } else if context.valid_actions.contains(&Action::Check) {
             Ok(Action::Check)
         } else {
-            Ok(context.valid_actions[0].clone())
+            Ok(context.valid_actions[0])
         }
     }
 
@@ -402,7 +426,7 @@ impl BalancedStrategy {
         } else if context.valid_actions.contains(&Action::Call) {
             Ok(Action::Call)
         } else {
-            Ok(context.valid_actions[0].clone())
+            Ok(context.valid_actions[0])
         }
     }
 }

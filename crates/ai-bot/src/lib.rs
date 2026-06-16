@@ -210,7 +210,7 @@ impl AIBot {
         }
 
         strength += high_card_bonus;
-        strength.min(1.0).max(0.0)
+        strength.clamp(0.0, 1.0)
     }
 
     fn evaluate_flop_strength(&self, hole_cards: &[Card; 2], community_cards: &[Card]) -> f64 {
@@ -393,7 +393,7 @@ impl PokerBot for AIBot {
 
     fn update_from_action(&mut self, player_id: usize, action: &Action) {
         self.update_opponent_model(player_id, action);
-        self.betting_history.add_action(player_id, action.clone());
+        self.betting_history.add_action(player_id, *action);
     }
 
     fn reset_for_new_hand(&mut self) {
@@ -449,21 +449,17 @@ impl AIBot {
         let mut rng = thread_rng();
         
         // Beginners tend to call too much and fold too little
-        if hand_strength < 0.3 && valid_actions.contains(&Action::Call) {
-            if rng.gen::<f64>() < 0.4 {
-                return Action::Call; // Should probably fold but calls instead
-            }
+        if hand_strength < 0.3 && valid_actions.contains(&Action::Call) && rng.gen::<f64>() < 0.4 {
+            return Action::Call; // Should probably fold but calls instead
         }
         
         // Or they might fold decent hands
-        if hand_strength > 0.6 && valid_actions.contains(&Action::Fold) {
-            if rng.gen::<f64>() < 0.2 {
-                return Action::Fold; // Should play but folds instead
-            }
+        if hand_strength > 0.6 && valid_actions.contains(&Action::Fold) && rng.gen::<f64>() < 0.2 {
+            return Action::Fold; // Should play but folds instead
         }
         
         // Default to a random valid action
-        valid_actions[rng.gen_range(0..valid_actions.len())].clone()
+        valid_actions[rng.gen_range(0..valid_actions.len())]
     }
 
     fn make_minor_mistake(&self, optimal_action: Action, valid_actions: &[Action]) -> Action {
@@ -552,7 +548,7 @@ mod tests {
         let game_state = create_test_game_state();
         
         let pot_odds = bot.calculate_pot_odds(&game_state, 50);
-        assert!(pot_odds >= 0.0 && pot_odds <= 1.0, "Pot odds should be between 0 and 1");
+        assert!((0.0..=1.0).contains(&pot_odds), "Pot odds should be between 0 and 1");
     }
 
     #[test]

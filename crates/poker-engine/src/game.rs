@@ -65,14 +65,15 @@ impl GameState {
         dealer_position: usize,
     ) -> Self {
         let num_players = players.len();
-        let (small_blind_position, big_blind_position) = if num_players >= 2 {
-            (
+        let (small_blind_position, big_blind_position) = match num_players {
+            // Heads-up: the dealer posts the small blind, the other player the big blind.
+            2 => (dealer_position, (dealer_position + 1) % num_players),
+            n if n > 2 => (
                 (dealer_position + 1) % num_players,
                 (dealer_position + 2) % num_players,
-            )
-        } else {
-            // Defer proper position assignment until players join
-            (0, 0)
+            ),
+            // Defer proper position assignment until players join.
+            _ => (0, 0),
         };
         let betting_rules = BettingRules::new(small_blind, big_blind);
 
@@ -322,18 +323,38 @@ impl GameState {
 
         // Check if betting round is complete
         if self.is_betting_round_complete() {
+            // Number of players who still have chips and can act this hand.
+            let can_act_count = self.players.iter().filter(|p| p.can_act()).count();
+
             if self.should_go_to_showdown() {
                 self.current_phase = GamePhase::Showdown;
                 // Note: Caller should call complete_hand() when ready for showdown
+            } else if can_act_count <= 1 && self.active_player_count() >= 2 {
+                // Everyone (or all but one) is all-in: there is no more betting to
+                // do, so run out the remaining community cards and go to showdown.
+                while self.current_phase != GamePhase::River
+                    && self.current_phase != GamePhase::Showdown
+                {
+                    self.deal_community_cards();
+                }
+                self.current_phase = GamePhase::Showdown;
             } else {
                 self.deal_community_cards();
             }
         }
     }
 
+    /// Advance `current_player_index` to the next player able to act.
+    ///
+    /// If no player can act (everyone remaining is folded or all-in) the index
+    /// is left unchanged after a full pass, preventing an infinite loop.
     fn skip_to_next_active_player(&mut self) {
-        while !self.players[self.current_player_index].can_act() {
-            self.current_player_index = (self.current_player_index + 1) % self.players.len();
+        let num_players = self.players.len();
+        for _ in 0..num_players {
+            if self.players[self.current_player_index].can_act() {
+                return;
+            }
+            self.current_player_index = (self.current_player_index + 1) % num_players;
         }
     }
 
@@ -341,6 +362,12 @@ impl GameState {
         // All active players have acted
         let active_players = self.active_player_count();
         if active_players <= 1 {
+            return true;
+        }
+
+        // If nobody remaining can act (everyone is all-in), there is no more
+        // betting to do this round.
+        if self.players.iter().filter(|p| p.can_act()).count() == 0 {
             return true;
         }
 
@@ -463,8 +490,8 @@ impl GameState {
             let winners: Vec<usize> = active_players
                 .iter()
                 .filter(|(_idx, hand)| {
-                    let is_winner = hand.cmp(best_hand) == std::cmp::Ordering::Equal;
-                    is_winner
+                    
+                    hand.cmp(best_hand) == std::cmp::Ordering::Equal
                 })
                 .map(|(idx, _)| *idx)
                 .collect();

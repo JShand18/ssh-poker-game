@@ -56,7 +56,8 @@ impl Database {
                 }
             }
             info!("Creating new database file: {}", config.database_path);
-            format!("sqlite://{}", config.database_path)
+            // SQLite needs proper connection string with create mode
+            format!("sqlite://{}?mode=rwc", config.database_path)
         };
         
         let pool = sqlx::sqlite::SqlitePoolOptions::new()
@@ -161,7 +162,10 @@ impl Database {
         let config = DatabaseConfig {
             database_path: ":memory:".to_string(),
             create_if_missing: true,
-            max_connections: 5,
+            // A SQLite in-memory database is private to a single connection, so the
+            // pool must be limited to one connection or migrations/data created on
+            // one connection won't be visible on another.
+            max_connections: 1,
         };
         Self::new(config).await.map_err(|e| DatabaseError::OperationFailed(e.to_string()))
     }
