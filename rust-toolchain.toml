@@ -1,0 +1,7 @@
+# Pin the Rust toolchain so local, Dev Container, and CI all use the same
+# compiler and clippy lint set. This prevents CI from breaking when a newer
+# stable rustc/clippy introduces new lints (which `-D warnings` turns into
+# hard errors). Keep this in sync with .devcontainer (Rust 1.82).
+[toolchain]
+channel = "1.82.0"
+components = ["clippy", "rustfmt"]
