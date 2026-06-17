@@ -27,6 +27,7 @@ will understand the whole project.
 | [Architecture Decision Records](./adr/README.md) | Why we made each major decision, the alternatives we rejected, and the trade-offs we accepted. The narrative backbone. |
 | [Architecture overview](./architecture/overview.md) | What the system looks like today: components, responsibilities, data flow, and diagrams. |
 | [Roadmap](./roadmap.md) | The milestone-by-milestone plan (M1-M12) tied to the GitHub Project board, with the production rationale for each phase. |
+| [Sprint plan](./sprint-plan.md) | The roadmap as a week-by-week schedule (S1-S21) sized at 3-5 hours per sprint, sequenced to reach a playable game first. |
 | [Development guide](./development.md) | How to set up the environment, regenerate code, build, test, and follow the branch/PR workflow. |
 | [Spec-driven development](./practices/spec-driven-development.md) | How `poker.proto` is treated as the contract-first source of truth that both languages generate from. |
 | [Test-driven development](./practices/test-driven-development.md) | The red-green-refactor loop and the cross-language test pyramid, grounded in the Phase 0 cautionary tale. |
@@ -43,7 +44,8 @@ will understand the whole project.
 5. [Spec-driven development](./practices/spec-driven-development.md) and
    [Test-driven development](./practices/test-driven-development.md) - the two
    working practices that shape day-to-day contributions.
-6. [Roadmap](./roadmap.md) - to see where we are and what is next.
+6. [Roadmap](./roadmap.md) and [Sprint plan](./sprint-plan.md) - to see where we
+   are, what is next, and the week-by-week schedule to get there.
 7. [References](./references.md) - to go deeper on any topic via verified
    external sources.
 

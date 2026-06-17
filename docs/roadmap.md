@@ -31,6 +31,10 @@ The workflow for every issue is the same: **one issue = one branch = one PR**,
 branch named `m<phase>/<slug>`, the PR says `Closes #N` and must pass CI. See the
 [development guide](./development.md) for the mechanics.
 
+For this same plan as a concrete week-by-week schedule (S1-S21, sized at 3-5
+hours per sprint and sequenced to reach a playable game first), see the
+[sprint plan](./sprint-plan.md).
+
 ---
 
 ## M1 - Dev environment
