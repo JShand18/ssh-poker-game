@@ -1,0 +1,62 @@
+name: Dev Container
+
+# Validates that the canonical development environment (.devcontainer) still
+# builds and that its toolchain works. We hit real base-image rot by hand
+# (expired apt key, Go-version bump, plugin installs); this catches that class
+# of failure automatically. See docs/adr/0003-dev-container-environment.md.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - ".devcontainer/**"
+      - "Makefile"
+      - "proto/**"
+      - ".github/workflows/devcontainer.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - ".devcontainer/**"
+      - "Makefile"
+      - "proto/**"
+      - ".github/workflows/devcontainer.yml"
+  # Catch upstream base-image drift even when our files do not change.
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  devcontainer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build dev container and verify toolchain
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: |
+            set -euo pipefail
+            export PATH="/home/vscode/.cargo/bin:/usr/local/go/bin:/go/bin:/home/vscode/go/bin:$PATH"
+            echo "== toolchain versions =="
+            go version
+            cargo --version
+            protoc --version
+            command -v protoc-gen-go
+            command -v protoc-gen-go-grpc
+            buf --version
+            # Once the Go gateway is present (post-M2), verify codegen + build
+            # inside the container for true CI/dev parity.
+            if [ -f gateway/go.mod ]; then
+              echo "== go codegen + build =="
+              make proto-go
+              (cd gateway && go build ./...)
+            fi
+            if [ -f crates/engine-service/Cargo.toml ]; then
+              echo "== rust engine-service build =="
+              cargo build -p engine-service
+            fi
+            echo "ALL_OK"
