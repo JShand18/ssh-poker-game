@@ -1,317 +1,133 @@
-# 🎰 SSH Poker Game - Casino Terminal Experience
+# SSH Poker Game
 
-A production-ready SSH-accessible multiplayer Texas Hold'em poker game with a rich casino-themed terminal UI, implemented in Rust.
+A multiplayer Texas Hold'em game you play over SSH, in your terminal. This
+repository is **mid-migration** from an all-Rust implementation to a hybrid
+architecture: a Go front end (Charm's Wish + Bubble Tea) backed by the existing
+Rust poker engine, exposed as a stateless gRPC rules service.
 
-## ✨ Recent Updates (November 2024)
+> **Honest status, June 2026.** Earlier versions of this README described the
+> project as a "production-ready" all-Rust server. That was not accurate: a
+> review found the Rust game engine was solid but the SSH/TUI layer never
+> rendered to clients and authentication was bypassed. We have since stabilized
+> the engine and are rebuilding the front end. This README now reflects the
+> *actual* state of the repo. The full story is in the
+> [Architecture Decision Records](docs/adr/README.md).
 
-- **Major Code Cleanup**: Removed 1,000+ lines of dead code and consolidated duplicate implementations
-- **Casino TUI Integration**: Rich terminal interface with casino styling now fully integrated
-- **Enhanced Security**: Proper authentication with SecureAuthService and database-backed sessions
-- **Improved Architecture**: Cleaner separation of concerns and preparation for Go/Charm.sh migration
+## Architecture in brief
 
-## 🎮 Overview
+```mermaid
+flowchart LR
+  player["Player (SSH client)"] -->|"ssh -p 2222"| gateway["Go gateway (Wish + Bubble Tea): sessions + table state"]
+  gateway -->|"gRPC: ApplyAction(stateBlob, action)"| engine["Rust engine-service (stateless, wraps poker-engine)"]
+  engine -->|"new stateBlob + per-seat TableViews"| gateway
+  gateway -->|"program.Send (in-process)"| others["other seated players"]
+```
 
-This project implements a feature-rich, secure poker game server accessible via SSH. Players connect using any SSH client to enjoy a casino-style poker experience directly in their terminal.
+- **Front end - Go (Charm.sh).** [Wish](https://github.com/charmbracelet/wish)
+  serves SSH and turns each session into a
+  [Bubble Tea](https://github.com/charmbracelet/bubbletea) TUI, styled with
+  [Lip Gloss](https://github.com/charmbracelet/lipgloss). Go owns the SSH
+  sessions and the **authoritative table state**.
+- **Engine - Rust over gRPC.** The proven `poker-engine` is wrapped by a
+  stateless `engine-service` (tonic). Given a state and an action it returns the
+  next state plus a rendered view per seat. It is a pure function; it remembers
+  nothing between calls.
+- **State is opaque; views are typed.** The authoritative `GameState` crosses the
+  boundary as an opaque serialized blob that Go stores but never interprets;
+  Rust returns per-seat `TableView`s, and a player only ever receives their own
+  hole cards. This keeps the contract tiny and is server-authoritative by design.
+- **Multiplayer is in-process.** Because sessions and state both live in Go, one
+  player's action fans out to the others via Bubble Tea's `program.Send` - no
+  gRPC streaming needed.
 
-### 🌟 Key Features
+This is "Option A" of the migration; the reasoning (and the options rejected) is
+in [ADR-0002](docs/adr/0002-go-frontend-rust-engine.md).
 
-- **🔐 SSH Access**: Secure connection via any SSH client
-- **🎨 Casino TUI**: Beautiful casino-themed terminal interface using ratatui
-- **👥 Multiplayer**: Support for multiple concurrent tables and players
-- **🤖 AI Bots**: Intelligent computer players with configurable difficulty
-- **💾 Database Backend**: SQLite for persistent storage and user management
-- **🔒 Security**: Argon2 password hashing, rate limiting, and session management
-- **📊 Metrics**: Prometheus metrics endpoint for monitoring
+## Current status
 
-## 📁 Project Structure
+- **Rust `poker-engine`: stabilized and green.** Correctness bugs (including an
+  all-in infinite loop) fixed; the test suite compiles and passes; `clippy -D
+  warnings` is clean. See
+  [ADR-0001](docs/adr/0001-stabilize-the-rust-baseline.md).
+- **Contract + toolchain: in place and verified.** The gRPC contract
+  (`proto/poker/v1/poker.proto`), codegen wiring, and the Dev Container all exist;
+  Go codegen and `go build` pass inside the container.
+- **`engine-service` and the Go gateway: scaffolds.** They build and exercise
+  codegen today; the real RPCs (M3) and the SSH/TUI front end (M4-M7) are the
+  work in progress.
+- **Deferred (not built):** authentication, AI bots, persistence, metrics, and a
+  future streaming upgrade. The old Rust SSH/TUI crates
+  (`crates/ssh-poker-server`, `crates/poker-tui`) will be retired once the Go
+  front end reaches parity.
+
+Track progress on GitHub Project board #2 (milestones M1-M12); the
+[roadmap](docs/roadmap.md) narrates each milestone.
+
+## Quick start (Dev Container)
+
+Everything builds inside a [Dev Container](https://containers.dev/), so you only
+need **Docker** and an editor/CLI that supports the Dev Containers spec - no Go,
+Rust, or `protoc` on your host
+([ADR-0003](docs/adr/0003-dev-container-environment.md)).
+
+1. Open this folder in a Dev Container (e.g. VS Code: "Reopen in Container").
+   The container provisions Go, Rust 1.82.0, `protoc`, the Go protobuf plugins,
+   and `buf`, and prints their versions on creation.
+2. Generate code and build both halves:
+
+```bash
+make proto      # generate gRPC code for Go and Rust
+make build      # build the Rust workspace and the Go gateway
+make test       # run the Rust and Go test suites
+```
+
+See the [development guide](docs/development.md) for the full workflow
+(regenerating code, the branch/PR conventions, and quality checks).
+
+## Repository layout
 
 ```
 ssh-poker-game/
-├── crates/                      # Workspace members
-│   ├── poker-engine/            # Core game logic (Elm-like architecture)
-│   ├── ssh-poker-server/        # SSH server with integrated Casino TUI
-│   │   ├── src/
-│   │   │   ├── lib.rs          # Main server entry point
-│   │   │   ├── ssh_handler.rs  # SSH session handler with TUI bridge
-│   │   │   ├── ssh_tui_bridge.rs # Bridge between SSH and poker-tui
-│   │   │   ├── secure_auth.rs  # Database-backed authentication
-│   │   │   ├── session.rs      # Session and table management
-│   │   │   └── error.rs        # Error types
-│   ├── poker-tui/               # Casino-themed terminal UI components
-│   ├── data-store/              # Database layer (SQLite via sqlx)
-│   ├── ai-bot/                  # AI opponent implementation
-│   └── hybrid-metrics/          # Prometheus/Datadog monitoring
-├── docs/                        # Comprehensive documentation
-├── test_ssh_poker.sh           # Comprehensive test suite
-├── quick_start.sh              # Quick server startup script
-├── MIGRATION_PLAN.md           # Go/Charm.sh migration roadmap
-└── README.md                   # This file
+  proto/poker/v1/poker.proto   # the gRPC contract (source of truth)
+  crates/
+    poker-engine/              # the rules engine (stable, green) - the asset
+    engine-service/            # tonic gRPC server wrapping poker-engine (scaffold)
+    data-store/ ai-bot/ hybrid-metrics/   # deferred, left in place
+    ssh-poker-server/ poker-tui/          # legacy SSH/TUI, retiring after parity
+  gateway/                     # Go module: Wish + Bubble Tea + gRPC client (scaffold)
+    cmd/poker-gateway/main.go
+    internal/pokerpb/          # generated Go code from the proto
+  Makefile                     # make proto / build / test for both halves
+  .devcontainer/               # the one reproducible toolchain
+  docs/                        # documentation hub (start at docs/README.md)
 ```
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Rust 1.75+** - Install from [rustup.rs](https://rustup.rs/)
-- **SSH client** - OpenSSH, PuTTY, or any compatible client
-- **Terminal** - Minimum size 80x24 with ANSI color support
-
-### 🎯 Quick Start (Recommended)
-
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd ssh-poker-game
-
-# Run the quick start script
-./quick_start.sh
-```
-
-This will:
-- Build the project in release mode
-- Create a SQLite database
-- Create a demo user (demo/demo123)
-- Start the server on port 2222
-
-### 🔌 Connecting to the Server
-
-```bash
-# Connect as demo user (password: demo123)
-ssh -p 2222 demo@localhost
-
-# Connect as anonymous guest
-ssh -p 2222 guest@localhost
-```
-
-### 🛠️ Manual Setup
-
-#### Build the Project
-
-```bash
-# Debug build (faster compilation, slower runtime)
-cargo build --bin ssh-poker-server
-
-# Release build (optimized for production)
-cargo build --release --bin ssh-poker-server
-```
-
-#### Run the Server
-
-```bash
-# Basic server startup
-cargo run --bin ssh-poker-server
-
-# With custom options
-cargo run --bin ssh-poker-server -- \
-  --port 2222 \
-  --address 0.0.0.0 \
-  --database poker_game.db \
-  --create-demo-user
-```
-
-#### Server Options
-
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--port` | `-p` | 2222 | SSH server port |
-| `--address` | `-a` | 0.0.0.0 | Bind address |
-| `--database` | `-d` | poker_game.db | SQLite database path |
-| `--create-demo-user` | | false | Create demo user on startup |
-| `--verbose` | `-v` | false | Enable debug logging |
-
-## 🧪 Testing
-
-### Run the Test Suite
-
-```bash
-# Run comprehensive test suite
-./test_ssh_poker.sh
-
-# Interactive test mode
-./test_ssh_poker.sh interactive
-
-# Clean up test artifacts
-./test_ssh_poker.sh clean
-```
-
-### Run Unit Tests
-
-```bash
-# All tests
-cargo test --workspace
-
-# Specific crate
-cargo test -p poker-engine
-cargo test -p ssh-poker-server
-
-# With output
-cargo test -- --nocapture
-```
-
-## 🎮 Gameplay
-
-### In-Game Controls
-
-Once connected via SSH:
-
-#### Navigation
-- **Arrow Keys** or **W/A/S/D** - Navigate menus
-- **Enter** - Select/Confirm
-- **Esc** - Go back
-- **Q** - Quit to main menu
-
-#### Poker Actions
-- **F** - Fold
-- **C** - Call/Check
-- **R** - Raise
-- **A** - All-in
-
-#### Lobby
-- **1-9** - Join table by number
-- **N** - Create new table
-
-## 🔧 Development
-
-### Building Components
-
-```bash
-# Build everything
-cargo build --workspace
-
-# Build specific crate
-cargo build -p poker-engine
-cargo build -p poker-tui
-cargo build -p ssh-poker-server
-```
-
-### Code Quality
-
-```bash
-# Format code
-cargo fmt
-
-# Run clippy linter
-cargo clippy --workspace --all-features
-
-# Check for compilation errors
-cargo check --workspace
-
-# Security audit
-cargo audit
-```
-
-### Monitoring
-
-When the server is running, metrics are available at:
-
-```bash
-# Prometheus metrics
-curl http://localhost:9090/metrics
-
-# Health check
-curl http://localhost:9090/health
-```
-
-### Environment Variables
-
-```bash
-# Set log level
-RUST_LOG=debug cargo run --bin ssh-poker-server
-
-# Enable backtrace for debugging
-RUST_BACKTRACE=1 cargo run --bin ssh-poker-server
-```
-
-## 📚 Documentation
-
-Comprehensive documentation is available in the `docs/` directory:
-
-- [Executive Summary](docs/executive_summary.md) - High-level overview
-- [Current State](docs/current_state_summary.md) - Implementation status
-- [Architecture](docs/simplified_architecture.md) - System architecture
-- [Migration Plan](MIGRATION_PLAN.md) - Go/Charm.sh migration roadmap
-
-### Learning Resources
-
-- [Book Mappings](docs/book_mappings/README.md) - Code examples mapped to programming books
-- [Gameplay Guide](GAMEPLAY.md) - Detailed poker rules and gameplay
-
-## 🏗️ Architecture Highlights
-
-### Clean Architecture
-- **Elm-like game engine** - Functional, immutable game state management
-- **Casino TUI** - Rich terminal interface with themes and animations
-- **SSH Bridge** - Seamless integration between SSH and TUI events
-
-### Security Features
-- **Argon2** password hashing
-- **Rate limiting** on authentication attempts
-- **Session management** with automatic cleanup
-- **Database-backed** user authentication
-
-### Recent Improvements (November 2024)
-- Removed 1,020+ lines of dead code
-- Consolidated 3 authentication systems into 1
-- Integrated casino-themed TUI via ssh_tui_bridge
-- Fixed authentication to use SecureAuthService properly
-- Created comprehensive test infrastructure
-
-## 🚦 Troubleshooting
-
-### Port Already in Use
-```bash
-# Check what's using port 2222
-lsof -i :2222
-
-# Kill process on port
-kill $(lsof -t -i:2222)
-```
-
-### Connection Issues
-```bash
-# Test with verbose SSH output
-ssh -vvv -p 2222 localhost
-
-# Check server logs
-RUST_LOG=debug ./quick_start.sh
-```
-
-### Database Issues
-```bash
-# Connect to SQLite database
-sqlite3 poker_game.db
-
-# Show tables
-.tables
-
-# Check users
-SELECT * FROM users;
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please ensure:
-1. Code passes `cargo fmt` and `cargo clippy`
-2. Tests pass with `cargo test`
-3. Documentation is updated for new features
-
-## 📜 License
-
-MIT License - See LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- [russh](https://github.com/warp-tech/russh) - Rust SSH library
-- [ratatui](https://ratatui.rs) - Terminal UI framework
-- [tokio](https://tokio.rs) - Async runtime
-- [sqlx](https://github.com/launchbadge/sqlx) - Async SQL toolkit
-
-## 📊 Project Status
-
-**Current Phase**: Code cleanup complete, TUI integrated, preparing for state consolidation
-
-**Next Steps**:
-- Phase 4: Consolidate game state management
-- Phase 5: Prepare for Go/Charm.sh migration
-
-See the [Migration Plan](MIGRATION_PLAN.md) for the roadmap to Go with Charm.sh.
+## Documentation
+
+The documentation is the single, cohesive narrative of what this project is, why
+it is built this way, and how to work on it. **Start here:**
+
+- **[Documentation hub](docs/README.md)** - the orientation page and reading
+  order.
+- **[Architecture Decision Records](docs/adr/README.md)** - the "why" behind
+  every major decision:
+  - [ADR-0001: Stabilize the Rust baseline](docs/adr/0001-stabilize-the-rust-baseline.md)
+  - [ADR-0002: Go front end with a Rust rules engine](docs/adr/0002-go-frontend-rust-engine.md)
+  - [ADR-0003: A Dev Container is the canonical environment](docs/adr/0003-dev-container-environment.md)
+  - [ADR-0004: gRPC contract with opaque state](docs/adr/0004-grpc-contract-and-opaque-state.md)
+  - [ADR-0005: Keep one monorepo](docs/adr/0005-monorepo-structure.md)
+  - [ADR-0006: Layered testing strategy](docs/adr/0006-testing-strategy.md)
+  - [ADR-0007: CI/CD gates and releases](docs/adr/0007-ci-cd-pipeline.md)
+  - [ADR-0008: Security posture](docs/adr/0008-security-posture.md)
+- **[Architecture overview](docs/architecture/overview.md)** - components, data
+  flow, and diagrams.
+- **[Roadmap](docs/roadmap.md)** - the M1-M12 milestone plan.
+- **[Development guide](docs/development.md)** - environment, codegen, build/test,
+  and the contribution workflow.
+- **[References](docs/references.md)** - curated external reading (Charm, gRPC,
+  tonic, TDD, poker hand evaluation, SSH security, and more).
+
+## License
+
+MIT License. The crates are published under MIT (`license = "MIT"` in
+`Cargo.toml`); a top-level `LICENSE` file is not yet committed.
