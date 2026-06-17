@@ -16,7 +16,17 @@ jobs:
     timeout-minutes: 20
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
+    # protoc is required by engine-service (tonic-build generates the gRPC code
+    # from proto/poker/v1/poker.proto at build time). Matches the Dev Container.
+    - name: Install protoc
+      run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+    # The toolchain (1.82 + clippy/rustfmt) is pinned via rust-toolchain.toml,
+    # so rustup installs the matching components on first use.
+    - name: Show toolchain
+      run: rustc --version && cargo clippy --version
 
     - name: Check lints
       run: cargo clippy --workspace --all-targets -- -D warnings
@@ -24,12 +34,11 @@ jobs:
     - name: Run tests
       run: cargo test --workspace --verbose
 
-  # Formatting is currently advisory: the codebase predates a rustfmt pass.
-  # Run `cargo fmt` and commit it to make this a hard gate.
+  # Formatting is advisory until the repo adopts a rustfmt pass: this reports
+  # differences as a warning annotation without failing the check.
   format:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-    - uses: actions/checkout@v3
-    - name: Check formatting
-      run: cargo fmt --check
+    - uses: actions/checkout@v4
+    - name: Check formatting (advisory)
+      run: cargo fmt --check || echo "::warning::Formatting differs from rustfmt; run 'cargo fmt'. Advisory until the repo adopts a formatting pass."
