@@ -1,0 +1,158 @@
+syntax = "proto3";
+
+package poker.v1;
+
+option go_package = "github.com/JShand18/ssh-poker-game/gateway/internal/pokerpb;pokerpb";
+
+// GameStateBlob is the authoritative poker-engine GameState, serialized by the
+// Rust engine. The Go gateway stores and round-trips this opaque blob without
+// interpreting it; only the engine understands its contents.
+message GameStateBlob {
+  bytes data = 1;
+}
+
+enum ActionKind {
+  ACTION_KIND_UNSPECIFIED = 0;
+  ACTION_KIND_FOLD = 1;
+  ACTION_KIND_CHECK = 2;
+  ACTION_KIND_CALL = 3;
+  ACTION_KIND_BET = 4;
+  ACTION_KIND_RAISE = 5;
+  ACTION_KIND_ALL_IN = 6;
+}
+
+// A player betting action. amount is only meaningful for BET and RAISE.
+message Action {
+  ActionKind kind = 1;
+  uint64 amount = 2;
+}
+
+enum Suit {
+  SUIT_UNSPECIFIED = 0;
+  SUIT_CLUBS = 1;
+  SUIT_DIAMONDS = 2;
+  SUIT_HEARTS = 3;
+  SUIT_SPADES = 4;
+}
+
+enum Rank {
+  RANK_UNSPECIFIED = 0;
+  RANK_TWO = 2;
+  RANK_THREE = 3;
+  RANK_FOUR = 4;
+  RANK_FIVE = 5;
+  RANK_SIX = 6;
+  RANK_SEVEN = 7;
+  RANK_EIGHT = 8;
+  RANK_NINE = 9;
+  RANK_TEN = 10;
+  RANK_JACK = 11;
+  RANK_QUEEN = 12;
+  RANK_KING = 13;
+  RANK_ACE = 14;
+}
+
+message Card {
+  Rank rank = 1;
+  Suit suit = 2;
+}
+
+enum Phase {
+  PHASE_UNSPECIFIED = 0;
+  PHASE_PRE_FLOP = 1;
+  PHASE_FLOP = 2;
+  PHASE_TURN = 3;
+  PHASE_RIVER = 4;
+  PHASE_SHOWDOWN = 5;
+}
+
+// A single seat as seen by a particular viewer. hole_cards is populated only
+// for the viewing player's own seat.
+message SeatView {
+  uint32 seat = 1;
+  string name = 2;
+  uint64 chips = 3;
+  uint64 current_bet = 4;
+  string status = 5; // active | folded | all_in | sitting_out
+  bool is_current = 6;
+  bool is_dealer = 7;
+  repeated Card hole_cards = 8;
+}
+
+// The full table rendered from one viewer's perspective.
+message TableView {
+  uint32 viewer_seat = 1;
+  Phase phase = 2;
+  repeated Card community_cards = 3;
+  uint64 pot = 4;
+  uint32 current_seat = 5;
+  uint32 dealer_seat = 6;
+  repeated SeatView seats = 7;
+}
+
+message PlayerConfig {
+  uint32 seat = 1;
+  string name = 2;
+  uint64 chips = 3;
+}
+
+message NewHandRequest {
+  repeated PlayerConfig players = 1;
+  uint64 small_blind = 2;
+  uint64 big_blind = 3;
+  uint32 dealer_position = 4;
+}
+
+// HandState carries the opaque state plus a rendered view per seat so the
+// gateway can fan out without extra round-trips.
+message HandState {
+  GameStateBlob state = 1;
+  repeated TableView views = 2;
+}
+
+message ApplyActionRequest {
+  GameStateBlob state = 1;
+  uint32 seat = 2;
+  Action action = 3;
+}
+
+message ApplyActionResult {
+  bool ok = 1;
+  string error = 2;
+  GameStateBlob state = 3;
+  repeated TableView views = 4;
+  bool hand_complete = 5;
+}
+
+message ValidActionsRequest {
+  GameStateBlob state = 1;
+}
+
+message ValidActions {
+  uint32 seat = 1;
+  repeated Action actions = 2;
+}
+
+message CompleteHandRequest {
+  GameStateBlob state = 1;
+}
+
+message Winning {
+  uint32 seat = 1;
+  uint64 amount = 2;
+}
+
+message CompleteHandResult {
+  GameStateBlob state = 1;
+  repeated Winning winnings = 2;
+  repeated TableView views = 3;
+}
+
+// EngineService is a stateless rules engine: every call takes the current
+// state (or hand config) and returns the next state plus rendered views.
+service EngineService {
+  rpc NewHand(NewHandRequest) returns (HandState);
+  rpc ApplyAction(ApplyActionRequest) returns (ApplyActionResult);
+  rpc GetValidActions(ValidActionsRequest) returns (ValidActions);
+  rpc CompleteHand(CompleteHandRequest) returns (CompleteHandResult);
+}
