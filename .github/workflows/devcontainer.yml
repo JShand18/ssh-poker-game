@@ -55,6 +55,11 @@ jobs:
           runCmd: |
             set -euo pipefail
             export PATH="/home/vscode/.cargo/bin:/usr/local/go/bin:/go/bin:/home/vscode/go/bin:$PATH"
+            # The base image's /go/pkg/mod is root-owned; use vscode-writable caches
+            # so `go build` works when devcontainers/ci runs as the container user.
+            export GOMODCACHE="${HOME}/go/pkg/mod"
+            export GOCACHE="${HOME}/.cache/go-build"
+            mkdir -p "$GOMODCACHE" "$GOCACHE"
             echo "== toolchain versions =="
             go version
             cargo --version
