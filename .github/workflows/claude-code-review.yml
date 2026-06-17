@@ -12,12 +12,12 @@ on:
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-    
+    # Opt-in: only runs when the repo variable ENABLE_CLAUDE is set to 'true'
+    # (and secrets.ANTHROPIC_API_KEY is configured). Otherwise the job is
+    # skipped so it does not fail PR checks. This action predates the current
+    # Go+Rust direction; CI quality gates live in the Rust CI workflow and the
+    # planned Go CI (issue #22).
+    if: ${{ vars.ENABLE_CLAUDE == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
